@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Regime Portal — Gamebook</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+:root{
+  --bg:#08090d;--bg2:#0e1018;--bg3:#141720;--bg4:#1a1e2a;
+  --b:rgba(255,255,255,.055);--b2:rgba(255,255,255,.11);
+  --txt:#dde0ec;--m:#485068;--m2:#808aaa;
+  --G:#00e5a0;--Gd:rgba(0,229,160,.09);--Gb:rgba(0,229,160,.24);
+  --A:#ffb84d;--Ad:rgba(255,184,77,.09);--Ab:rgba(255,184,77,.26);
+  --R:#ff4d6a;--Rd:rgba(255,77,106,.09);--Rb:rgba(255,77,106,.26);
+  --B:#5ba3ff;--Bd:rgba(91,163,255,.09);--Bb:rgba(91,163,255,.22);
+  --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font-family:var(--sans);font-size:13px;min-height:100vh}
+
+.topbar{background:var(--bg2);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 16px;height:46px;gap:10px;position:sticky;top:0;z-index:100}
+.brand{font-family:var(--mono);font-size:13px;font-weight:600;padding-right:14px;border-right:1px solid var(--b);flex-shrink:0}
+.brand em{color:var(--G);font-style:normal}
+.status-row{display:flex;align-items:center;gap:8px;flex:1}
+.ws-dot{width:7px;height:7px;border-radius:50%;background:var(--m);transition:background .3s}
+.ws-dot.connecting{background:var(--A);animation:blink .8s infinite}
+.ws-dot.live{background:var(--G);animation:pulse 2s infinite}
+.ws-dot.error{background:var(--R)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.ws-label{font-size:9px;font-family:var(--mono);color:var(--m2)}
+.mkt-pill{font-size:9px;font-family:var(--mono);padding:2px 8px;border-radius:3px;border:1px solid var(--b)}
+.clk{font-family:var(--mono);font-size:10px;color:var(--m)}
+.topbar-r{margin-left:auto;display:flex;align-items:center;gap:8px;flex-shrink:0}
+.rbtn{padding:4px 11px;border:1px solid var(--b2);border-radius:4px;background:transparent;color:var(--m2);font-size:10px;font-family:var(--mono);cursor:pointer;transition:all .13s}
+.rbtn:hover{border-color:var(--Gb);color:var(--G)}
+.rbtn:disabled{opacity:.4;cursor:default}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinning{animation:spin .6s linear infinite;display:inline-block}
+.oi-timer{font-size:9px;font-family:var(--mono);color:var(--m)}
+
+.grid-main{display:grid;grid-template-columns:1fr 1fr;height:calc(100vh - 46px)}
+.left-col{border-right:1px solid var(--b);overflow-y:auto;padding:14px}
+.right-col{overflow-y:auto;padding:14px}
+
+.card{background:var(--bg2);border:1px solid var(--b);border-radius:9px;padding:13px 15px;margin-bottom:11px}
+.card.cg{border-color:var(--Gb);background:rgba(0,229,160,.04)}
+.card.ca{border-color:var(--Ab);background:rgba(255,184,77,.04)}
+.card.cr{border-color:var(--Rb);background:rgba(255,77,106,.04)}
+
+.sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px}
+.sec-title{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--m);font-family:var(--mono)}
+
+.regime-block{border-radius:10px;padding:16px 18px;margin-bottom:11px;border:1px solid var(--b2);transition:all .3s}
+.regime-block.risk-on{border-color:var(--Gb);background:rgba(0,229,160,.07)}
+.regime-block.chop{border-color:var(--Ab);background:rgba(255,184,77,.07)}
+.regime-block.defensive{border-color:var(--Rb);background:rgba(255,77,106,.07)}
+.regime-title{font-size:21px;font-weight:600;font-family:var(--mono);line-height:1}
+.regime-sub{font-size:11px;font-family:var(--mono);margin-top:5px;opacity:.8}
+.regime-rule{font-size:10px;font-family:var(--mono);color:var(--m2);margin-top:8px;padding:7px 10px;background:rgba(0,0,0,.2);border-radius:5px;border-left:2px solid;line-height:1.7}
+
+.macro-row{display:flex;gap:7px;margin-bottom:11px}
+.macro-card{flex:1;background:var(--bg3);border:1px solid var(--b);border-radius:8px;padding:11px;text-align:center;transition:all .3s}
+.macro-card.green{border-color:var(--Gb);background:var(--Gd)}
+.macro-card.red{border-color:var(--Rb);background:var(--Rd)}
+.macro-card.flat{border-color:var(--Ab);background:var(--Ad)}
+.macro-sym{font-size:10px;font-family:var(--mono);font-weight:600;color:var(--m2);margin-bottom:3px;letter-spacing:.08em}
+.macro-price{font-size:16px;font-weight:600;font-family:var(--mono);transition:color .3s}
+.macro-chg{font-size:11px;font-family:var(--mono);margin-top:2px}
+.macro-vwap{font-size:9px;font-family:var(--mono);margin-top:3px}
+.macro-sub{font-size:9px;color:var(--m2);font-family:var(--mono);margin-top:3px}
+
+.verdict{border-radius:9px;padding:13px 15px;border:1px solid var(--b2);margin-bottom:11px;transition:all .3s}
+.verdict.go{border-color:var(--Gb);background:var(--Gd)}
+.verdict.wait{border-color:var(--Ab);background:var(--Ad)}
+.verdict.no{border-color:var(--Rb);background:var(--Rd)}
+.verdict.obs{border-color:var(--Bb);background:var(--Bd)}
+.verdict-title{font-size:16px;font-weight:600;font-family:var(--mono)}
+.verdict-detail{font-size:10px;font-family:var(--mono);margin-top:5px;line-height:1.8;color:var(--m2)}
+
+.check-block{background:var(--bg3);border:1px solid var(--b);border-radius:8px;padding:11px 13px;margin-bottom:9px}
+.check-hdr{display:flex;align-items:center;gap:8px;margin-bottom:9px}
+.check-time{font-size:10px;font-family:var(--mono);font-weight:600;color:var(--m2);background:var(--bg4);padding:2px 8px;border-radius:4px;border:1px solid var(--b)}
+.check-rules{display:flex;flex-direction:column;gap:5px}
+.rule-row{display:flex;align-items:center;gap:8px;font-size:11px;font-family:var(--mono)}
+.rule-icon{width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;transition:all .3s}
+.rule-icon.pass{background:var(--Gd);color:var(--G);border:1px solid var(--Gb)}
+.rule-icon.fail{background:var(--Rd);color:var(--R);border:1px solid var(--Rb)}
+.rule-icon.idle{background:var(--bg4);color:var(--m);border:1px solid var(--b)}
+.rule-text{flex:1;color:var(--m2)}
+.rule-val{font-weight:500;transition:color .3s}
+.sig-box{font-size:10px;font-family:var(--mono);color:var(--m2);margin-top:9px;padding:7px 10px;background:rgba(0,0,0,.15);border-radius:5px;border-left:2px solid var(--b);line-height:1.7}
+
+.ph-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px}
+.ph-item{background:var(--bg4);border:1px solid var(--b);border-radius:7px;padding:9px 11px;transition:all .3s}
+.ph-item.pass{border-color:var(--Gb);background:var(--Gd)}
+.ph-item.fail{border-color:var(--Rb);background:var(--Rd)}
+.ph-label{font-size:9px;font-family:var(--mono);color:var(--m2);text-transform:uppercase;letter-spacing:.07em;margin-bottom:3px}
+.ph-val{font-size:13px;font-weight:600;font-family:var(--mono);transition:color .3s}
+.ph-sub{font-size:9px;font-family:var(--mono);color:var(--m2);margin-top:2px}
+
+.sector-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.sec-card{background:var(--bg3);border:1px solid var(--b);border-radius:6px;padding:8px 10px;display:flex;align-items:center;gap:7px;transition:all .3s}
+.sec-card.lead{border-color:var(--Gb);background:var(--Gd)}
+.sec-card.weak{border-color:var(--Rb);background:var(--Rd)}
+.sec-sym{font-family:var(--mono);font-weight:600;font-size:12px;width:34px;flex-shrink:0}
+.sec-name{font-size:9px;color:var(--m2);flex:1;font-family:var(--mono)}
+.sec-pct{font-family:var(--mono);font-size:11px;font-weight:500;flex-shrink:0;transition:color .3s}
+.sec-vwap{font-size:9px;flex-shrink:0;font-family:var(--mono)}
+
+.wall-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--b);font-size:11px}
+.wall-row:last-child{border-bottom:none}
+.wall-sym{width:36px;font-family:var(--mono);font-weight:600;flex-shrink:0}
+.wall-bars{flex:1;display:flex;flex-direction:column;gap:2px}
+.wall-track{height:5px;background:var(--bg4);border-radius:2px;overflow:hidden}
+.wall-call{height:5px;background:var(--G);opacity:.65;border-radius:2px;transition:width .4s}
+.wall-put{height:5px;background:var(--R);opacity:.65;border-radius:2px;transition:width .4s}
+.wall-info{font-family:var(--mono);font-size:9px;color:var(--m2);width:100px;text-align:right;flex-shrink:0;line-height:1.6}
+
+.iv-row{display:flex;align-items:center;gap:8px;font-size:10px;font-family:var(--mono);padding:4px 0}
+.iv-lbl{width:40px;flex-shrink:0;color:var(--m2)}
+.iv-track{flex:1;height:5px;background:var(--bg4);border-radius:2px;overflow:hidden}
+.iv-fill{height:5px;border-radius:2px;transition:width .5s,background .5s}
+.iv-val{width:50px;text-align:right;flex-shrink:0}
+
+.badge{display:inline-block;font-size:9px;font-weight:600;padding:2px 7px;border-radius:3px;font-family:var(--mono);letter-spacing:.04em;text-transform:uppercase}
+.bg{background:var(--Gd);color:var(--G);border:1px solid var(--Gb)}
+.ba{background:var(--Ad);color:var(--A);border:1px solid var(--Ab)}
+.br{background:var(--Rd);color:var(--R);border:1px solid var(--Rb)}
+.bb{background:var(--Bd);color:var(--B);border:1px solid var(--Bb)}
+.bx{background:var(--bg3);color:var(--m2);border:1px solid var(--b)}
+
+.lrow{display:flex;gap:8px;padding:5px 0;border-bottom:1px solid var(--b);font-size:10px}
+.lrow:last-child{border-bottom:none}
+.lt{font-family:var(--mono);color:var(--m);width:50px;flex-shrink:0}
+.ldot2{width:5px;height:5px;border-radius:50%;margin-top:3px;flex-shrink:0}
+.lmsg{flex:1;color:var(--m2);font-family:var(--mono);line-height:1.5}
+
+@keyframes flash{0%{opacity:1}50%{opacity:.4}100%{opacity:1}}
+.flash{animation:flash .4s ease}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">Regime <em>Portal</em></div>
+  <div class="status-row">
+    <span class="ws-dot" id="ws-dot"></span>
+    <span class="ws-label" id="ws-label">connecting...</span>
+    <span class="mkt-pill bx" id="mkt-pill">mkt —</span>
+    <span class="clk" id="clk">—</span>
+  </div>
+  <div class="topbar-r">
+    <span class="oi-timer" id="oi-timer">OI refresh: —</span>
+    <button class="rbtn" id="rbtn" onclick="restRefresh()"><span id="rspin">⟳</span> OI Refresh</button>
+  </div>
+</header>
+
+<div class="grid-main">
+<div class="left-col">
+
+  <!-- REGIME GATE -->
+  <div class="sec-hdr"><div class="sec-title">Regime Gate</div><span class="badge bx" id="regime-badge">loading</span></div>
+  <div class="regime-block" id="regime-block">
+    <div class="regime-title" id="regime-title">Connecting...</div>
+    <div class="regime-sub" id="regime-sub">WebSocket + OI data loading</div>
+    <div class="regime-rule" id="regime-rule" style="border-color:var(--m)">Set WS_KEY and PROXY in the script to connect</div>
+  </div>
+
+  <!-- SPY / QQQ / IWM -->
+  <div class="macro-row">
+    <div class="macro-card" id="mc-spy"><div class="macro-sym">SPY</div><div class="macro-price" id="mp-spy">—</div><div class="macro-chg" id="mchg-spy">—</div><div class="macro-vwap" id="mvwap-spy">VWAP —</div><div class="macro-sub" id="msub-spy">P/C —</div></div>
+    <div class="macro-card" id="mc-qqq"><div class="macro-sym">QQQ</div><div class="macro-price" id="mp-qqq">—</div><div class="macro-chg" id="mchg-qqq">—</div><div class="macro-vwap" id="mvwap-qqq">VWAP —</div><div class="macro-sub" id="msub-qqq">P/C —</div></div>
+    <div class="macro-card" id="mc-iwm"><div class="macro-sym">IWM</div><div class="macro-price" id="mp-iwm">—</div><div class="macro-chg" id="mchg-iwm">—</div><div class="macro-vwap" id="mvwap-iwm">VWAP —</div><div class="macro-sub" id="msub-iwm">P/C —</div></div>
+  </div>
+
+  <!-- VERDICT -->
+  <div class="sec-hdr"><div class="sec-title">Session verdict</div></div>
+  <div class="verdict obs" id="verdict-box">
+    <div class="verdict-title" id="verdict-title">Loading...</div>
+    <div class="verdict-detail" id="verdict-detail">Connecting to Massive WebSocket + REST chain data</div>
+  </div>
+
+  <!-- OI WALLS -->
+  <div class="sec-hdr"><div class="sec-title">OI walls — call ceiling · put floor</div><span class="badge bx" id="wall-badge">—</span></div>
+  <div class="card" style="padding:11px 13px">
+    <div style="display:flex;gap:14px;font-size:9px;font-family:var(--mono);color:var(--m);margin-bottom:8px">
+      <span><span style="display:inline-block;width:9px;height:5px;background:var(--G);opacity:.65;vertical-align:middle;margin-right:3px;border-radius:1px"></span>Calls</span>
+      <span><span style="display:inline-block;width:9px;height:5px;background:var(--R);opacity:.65;vertical-align:middle;margin-right:3px;border-radius:1px"></span>Puts</span>
+      <span class="c-m" style="color:var(--m)">big bar = dealer wall = price magnet/support</span>
+    </div>
+    <div id="oi-walls"><div style="color:var(--m);font-family:var(--mono);font-size:10px">Loading REST data...</div></div>
+  </div>
+
+  <!-- IV -->
+  <div class="sec-hdr"><div class="sec-title">IV environment (from chain OI snapshots)</div><span class="badge bx" id="iv-badge">—</span></div>
+  <div class="card" style="padding:11px 13px"><div id="iv-bars"><div style="color:var(--m);font-family:var(--mono);font-size:10px">Loading...</div></div></div>
+
+  <!-- LOG -->
+  <div class="sec-hdr" style="margin-top:4px"><div class="sec-title">Signal log</div><button class="rbtn" onclick="clearLog()" style="font-size:9px;padding:2px 8px">Clear</button></div>
+  <div class="card" style="padding:10px 13px;max-height:140px;overflow-y:auto"><div id="log-list"><div style="color:var(--m);font-family:var(--mono);font-size:10px">No events yet.</div></div></div>
+
+</div>
+<div class="right-col">
+
+  <!-- 10:10 CHECK -->
+  <div class="sec-hdr"><div class="sec-title">10:10 check — trend declaration</div><span class="badge bx" id="t1010-badge">—</span></div>
+  <div class="check-block">
+    <div class="check-hdr">
+      <span class="check-time">10:10 AM</span>
+      <span style="font-size:10px;font-family:var(--mono);color:var(--m2)">Live via WebSocket</span>
+      <span style="margin-left:auto" id="c1010-status"></span>
+    </div>
+    <div class="check-rules">
+      <div class="rule-row"><div class="rule-icon idle" id="i1010-1">?</div><span class="rule-text">QQQ holds opening range high</span><span class="rule-val" id="v1010-1">—</span></div>
+      <div class="rule-row"><div class="rule-icon idle" id="i1010-2">?</div><span class="rule-text">QQQ above true VWAP (WS)</span><span class="rule-val" id="v1010-2">—</span></div>
+      <div class="rule-row"><div class="rule-icon idle" id="i1010-3">?</div><span class="rule-text">SPY and QQQ same direction</span><span class="rule-val" id="v1010-3">—</span></div>
+    </div>
+    <div class="sig-box" id="sig-1010">QQQ above OR + VWAP + SPY aligned → trend entry eligible<br>QQQ rejects VWAP → wait / chop · SPY ≠ QQQ → no full size</div>
+  </div>
+
+  <!-- 2PM -->
+  <div class="sec-hdr"><div class="sec-title">2PM clock — institutional reposition</div><span class="badge bx" id="t2pm-badge">—</span></div>
+  <div class="check-block">
+    <div class="check-hdr">
+      <span class="check-time">2:00 PM</span>
+      <span style="font-size:10px;font-family:var(--mono);color:var(--m2)">OI + IV from chain snapshots</span>
+      <span style="margin-left:auto" id="c2pm-status"></span>
+    </div>
+    <div class="check-rules">
+      <div class="rule-row"><div class="rule-icon idle" id="i2pm-1">?</div><span class="rule-text">IV expanding from session open</span><span class="rule-val" id="v2pm-1">—</span></div>
+      <div class="rule-row"><div class="rule-icon idle" id="i2pm-2">?</div><span class="rule-text">Sector leader confirmed</span><span class="rule-val" id="v2pm-2">—</span></div>
+      <div class="rule-row"><div class="rule-icon idle" id="i2pm-3">?</div><span class="rule-text">No lotto — SPY+QQQ aligned</span><span class="rule-val" id="v2pm-3">—</span></div>
+    </div>
+    <div class="sig-box" id="sig-2pm">IV expanding + sector leader + aligned → 2PM entry eligible<br>Avoid random lotto plays regardless of conditions</div>
+  </div>
+
+  <!-- POWER HOUR -->
+  <div class="sec-hdr"><div class="sec-title">Power hour — 3:00–4:00 PM · swing only if all pass</div><span class="badge bx" id="tph-badge">—</span></div>
+  <div class="check-block">
+    <div class="check-hdr">
+      <span class="check-time">3:00 PM</span>
+      <span style="font-size:10px;font-family:var(--mono);color:var(--m2)">True VWAP from WS · OI walls from REST</span>
+      <span style="margin-left:auto" id="cph-status"></span>
+    </div>
+    <div class="ph-grid">
+      <div class="ph-item" id="ph1"><div class="ph-label">Above VWAP (WS)</div><div class="ph-val" id="ph1v">—</div><div class="ph-sub" id="ph1s">SPY + QQQ</div></div>
+      <div class="ph-item" id="ph2"><div class="ph-label">Sector aligned</div><div class="ph-val" id="ph2v">—</div><div class="ph-sub" id="ph2s">leading ETF</div></div>
+      <div class="ph-item" id="ph3"><div class="ph-label">Call wall above</div><div class="ph-val" id="ph3v">—</div><div class="ph-sub" id="ph3s">SPY ceiling</div></div>
+      <div class="ph-item" id="ph4"><div class="ph-label">Put wall below</div><div class="ph-val" id="ph4v">—</div><div class="ph-sub" id="ph4s">SPY support</div></div>
+      <div class="ph-item" id="ph5"><div class="ph-label">IV not overheated</div><div class="ph-val" id="ph5v">—</div><div class="ph-sub" id="ph5s">QQQ IV &lt;40%</div></div>
+      <div class="ph-item" id="ph6"><div class="ph-label">Regime gate</div><div class="ph-val" id="ph6v">—</div><div class="ph-sub" id="ph6s">not defensive</div></div>
+    </div>
+    <div class="sig-box" id="sig-ph">All 6 → swing eligible · 4–5 → sniper size only · &lt;4 → observe</div>
+  </div>
+
+  <!-- SECTORS -->
+  <div class="sec-hdr"><div class="sec-title">Sector flow — live via WebSocket · OI from REST</div><span class="badge bx" id="sec-badge">—</span></div>
+  <div class="sector-grid" id="sector-grid">
+    <div style="color:var(--m);font-family:var(--mono);font-size:10px;grid-column:span 2;padding:6px 0">Connecting to WebSocket...</div>
+  </div>
+
+</div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════
+   CONFIGURATION
+   
+   WS_KEY  : Your Massive API key — used ONLY for WebSocket auth (WSS encrypted)
+   PROXY   : Your Cloudflare Worker URL — used for REST chain calls (OI/IV/walls)
+═══════════════════════════════════════ */
+const WS_KEY = 'KG3laY_ekvqiN5JVpNG4Io5buCCyC8at';
+const PROXY  = 'https://regime-proxy3.danilopena322.workers.dev';
+
+/* ═══════════════════════════════════════
+   WEBSOCKET CONFIG
+═══════════════════════════════════════ */
+const WS_URL   = 'wss://delayed.websocket.massive.com/options';
+const MACRO    = ['SPY','QQQ','IWM'];
+const SECTORS  = [
+  {sym:'XLU',name:'Utilities'},{sym:'XLK',name:'Technology'},
+  {sym:'XLE',name:'Energy'},{sym:'XLF',name:'Financials'},
+  {sym:'XLV',name:'Health Care'},{sym:'XLB',name:'Materials'},
+  {sym:'XLRE',name:'Real Estate'},{sym:'XLY',name:'Cons Disc'},
+  {sym:'XLC',name:'Comm Svcs'},{sym:'XLI',name:'Industrials'},
+  {sym:'XLP',name:'Staples'},
+];
+const ALL_SYMS = [...MACRO,...SECTORS.map(s=>s.sym)];
+// Subscribe string for WS — AM = aggregate per minute (has VWAP in 'a' field)
+const WS_SUB   = 'AM.'+ALL_SYMS.join(',AM.');
+
+/* ═══════════════════════════════════════
+   STATE
+═══════════════════════════════════════ */
+const S = {
+  // Live WS data per symbol
+  live:{},      // sym → {price, open, high, low, vwap, dp, updated}
+  // REST OI/IV data per symbol (refreshes every 5 min)
+  oi:{},        // sym → {callOI, putOI, avgIV, pcRatio, callWall, putWall}
+  ivAtOpen:{},  // baseline IV for expansion check
+
+  ws:null, wsReady:false, reconnectDelay:2000,
+  oisTimer:null, oiCountdown:300,
+  currentRegime:'chop', leaders:[],
+  log:[],
+};
+
+/* ═══════════════════════════════════════
+   CLOCK
+═══════════════════════════════════════ */
+function tick(){
+  const now=new Date();
+  document.getElementById('clk').textContent=now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  if(Object.keys(S.live).length>0) runGamebook();
+}
+setInterval(tick,1000); tick();
+
+/* ═══════════════════════════════════════
+   WEBSOCKET — primary real-time feed
+═══════════════════════════════════════ */
+function connectWS(){
+  if(WS_KEY==='YOUR_MASSIVE_KEY_HERE'){
+    setWSDot('error','key not set');
+    addLog('Set WS_KEY to your Massive API key in the script','red');
+    return;
+  }
+  setWSDot('connecting','connecting...');
+  addLog('WebSocket connecting → '+WS_URL,'amber');
+
+  try{
+    S.ws=new WebSocket(WS_URL);
+  }catch(e){
+    setWSDot('error','failed to open');
+    addLog('WS open error: '+e.message,'red');
+    scheduleReconnect(); return;
+  }
+
+  S.ws.onopen=()=>{
+    addLog('WS connected — authenticating','amber');
+    setWSDot('connecting','authenticating...');
+  };
+
+  S.ws.onmessage=e=>{
+    try{
+      const msgs=JSON.parse(e.data);
+      (Array.isArray(msgs)?msgs:[msgs]).forEach(handleWSMsg);
+    }catch(err){
+      addLog('WS parse error: '+err.message,'red');
+    }
+  };
+
+  S.ws.onerror=()=>{
+    setWSDot('error','connection error');
+    addLog('WS error — will reconnect','red');
+  };
+
+  S.ws.onclose=ev=>{
+    S.wsReady=false;
+    setWSDot('error','disconnected ('+ev.code+')');
+    addLog('WS closed ('+ev.code+') — reconnecting in '+S.reconnectDelay/1000+'s','amber');
+    scheduleReconnect();
+  };
+}
+
+function handleWSMsg(msg){
+  const ev=msg.ev;
+
+  if(ev==='connected'){
+    // Server confirmed connection — now auth
+    S.ws.send(JSON.stringify({action:'auth',params:WS_KEY}));
+    return;
+  }
+
+  if(ev==='auth_success'){
+    S.wsReady=true;
+    S.reconnectDelay=2000; // reset backoff
+    setWSDot('live','live · 15-min delayed');
+    addLog('WS authenticated — subscribing to '+ALL_SYMS.length+' symbols','green');
+    S.ws.send(JSON.stringify({action:'subscribe',params:WS_SUB}));
+    return;
+  }
+
+  if(ev==='auth_failed'){
+    setWSDot('error','auth failed — check WS_KEY');
+    addLog('WS auth failed — check WS_KEY in script','red');
+    return;
+  }
+
+  if(ev==='AM'){
+    // Aggregate minute bar — this is our primary live feed
+    // Fields: sym, o(open), c(close/price), h(high), l(low), v(volume), a(VWAP), s(start_ts)
+    const sym=msg.sym;
+    if(!ALL_SYMS.includes(sym)) return;
+
+    const price=msg.c;    // close = current price
+    const open=msg.o;
+    const high=msg.h;
+    const low=msg.l;
+    const vwap=msg.a;     // TRUE VWAP from Massive — this is the real thing
+
+    // Calculate % change (need prev close from REST; use open as proxy until REST loads)
+    const prevClose=S.live[sym]?.prevClose || S.oi[sym]?.prevClose || open;
+    const dp=prevClose>0?((price-prevClose)/prevClose*100):0;
+
+    S.live[sym]={price,open,high,low,vwap,dp,prevClose,updated:Date.now()};
+
+    // Update UI for this symbol
+    updateSymbolUI(sym);
+    // Rerun gamebook checks on key symbols
+    if(MACRO.includes(sym)) runGamebook();
+    return;
+  }
+
+  if(ev==='subscribed'){
+    addLog('WS subscribed: '+msg.params,'green');
+    return;
+  }
+
+  if(ev==='disconnected'){
+    addLog('WS server disconnected: '+(msg.message||''),'amber');
+    return;
+  }
+}
+
+function scheduleReconnect(){
+  S.ws=null; S.wsReady=false;
+  setTimeout(()=>{
+    S.reconnectDelay=Math.min(S.reconnectDelay*1.5,30000); // exponential backoff, max 30s
+    connectWS();
+  },S.reconnectDelay);
+}
+
+function setWSDot(state,label){
+  const dot=document.getElementById('ws-dot');
+  const lbl=document.getElementById('ws-label');
+  dot.className='ws-dot '+state;
+  lbl.textContent=label;
+  lbl.style.color=state==='live'?'var(--G)':state==='error'?'var(--R)':'var(--A)';
+}
+
+/* ═══════════════════════════════════════
+   REST — chain snapshots for OI/IV/walls
+   Runs on load + every 5 minutes
+═══════════════════════════════════════ */
+async function restRefresh(){
+  if(PROXY.includes('YOUR-WORKER')){
+    addLog('Set PROXY to your Cloudflare Worker URL in the script','red');
+    return;
+  }
+  const btn=document.getElementById('rbtn');
+  const spin=document.getElementById('rspin');
+  btn.disabled=true; spin.classList.add('spinning');
+  addLog('REST refresh — fetching OI/IV/walls for '+ALL_SYMS.length+' symbols','amber');
+
+  // Market status
+  try{
+    const msURL=new URL(PROXY+'/v1/marketstatus/now');
+    const mr=await fetch(msURL.toString(),{headers:{'Accept':'application/json'}});
+    if(mr.ok){
+      const md=await mr.json();
+      const st=md.market||md.exchanges?.nyse||'unknown';
+      const pill=document.getElementById('mkt-pill');
+      if(st==='open'){pill.className='mkt-pill bg';pill.textContent='open';}
+      else if(st.includes('early')){pill.className='mkt-pill ba';pill.textContent='pre-mkt';}
+      else if(st.includes('late')){pill.className='mkt-pill ba';pill.textContent='after-hrs';}
+      else{pill.className='mkt-pill bx';pill.textContent='closed';}
+    }
+  }catch(e){addLog('Market status error: '+e.message,'red');}
+
+  // Fetch chain data for all symbols
+  const jobs=ALL_SYMS.map(async sym=>{
+    try{
+      const url=new URL(PROXY+'/v3/snapshot/options/'+sym);
+      url.searchParams.set('limit','250');
+      url.searchParams.set('sort','open_interest');
+      url.searchParams.set('order','desc');
+      const r=await fetch(url.toString(),{headers:{'Accept':'application/json'}});
+      if(!r.ok){addLog('REST '+r.status+' for '+sym,'red');return;}
+      const d=await r.json();
+      if(!d?.results?.length) return;
+
+      const ul=d.results[0].underlying_asset||{};
+      // Store prevClose for WS % calc
+      const prevClose=ul.previous_close||0;
+
+      let callOI=0,putOI=0,ivArr=[];
+      let callWallStrike=0,callWallOI=0,putWallStrike=0,putWallOI=0;
+      const ulPrice=ul.price||S.live[sym]?.price||0;
+
+      d.results.forEach(c=>{
+        const oi=c.open_interest||0;
+        const iv=c.implied_volatility||0;
+        const strike=c.details?.strike_price||0;
+        const type=c.details?.contract_type;
+        if(iv>0) ivArr.push(iv);
+        if(type==='call'){
+          callOI+=oi;
+          if(oi>callWallOI&&strike>ulPrice){callWallOI=oi;callWallStrike=strike;}
+        } else {
+          putOI+=oi;
+          if(oi>putWallOI&&strike<ulPrice&&strike>0){putWallOI=oi;putWallStrike=strike;}
+        }
+      });
+
+      const avgIV=ivArr.length?ivArr.reduce((a,b)=>a+b)/ivArr.length:0;
+      S.oi[sym]={callOI,putOI,avgIV,prevClose,
+        pcRatio:callOI>0?putOI/callOI:1,
+        callWall:{strike:callWallStrike,oi:callWallOI},
+        putWall:{strike:putWallStrike,oi:putWallOI}};
+
+      // Set baseline IV
+      if(!S.ivAtOpen[sym]&&avgIV>0) S.ivAtOpen[sym]=avgIV;
+
+      // If WS hasn't loaded price yet, seed from REST
+      if(!S.live[sym]&&ul.price>0){
+        const dp=prevClose>0?((ul.price-prevClose)/prevClose*100):ul.change_percent||0;
+        S.live[sym]={price:ul.price,open:ul.open||ul.price,high:ul.high||ul.price,low:ul.low||ul.price,
+          vwap:(ul.open+ul.high+ul.low+ul.price)/4, // proxy until WS sends real VWAP
+          dp,prevClose,updated:Date.now()};
+      } else if(S.live[sym]){
+        // Update prevClose so WS % calc stays accurate
+        S.live[sym].prevClose=prevClose;
+      }
+
+    }catch(e){addLog('REST error '+sym+': '+e.message,'red');}
+  });
+
+  await Promise.all(jobs);
+  btn.disabled=false; spin.classList.remove('spinning');
+
+  renderOIWalls(); renderIVBars(); renderSectors(); runGamebook();
+  addLog('REST refresh complete — '+Object.keys(S.oi).length+' OI datasets loaded','green');
+  startOITimer();
+}
+
+function startOITimer(){
+  if(S.oiTimer) clearInterval(S.oiTimer);
+  S.oiCountdown=300;
+  S.oiTimer=setInterval(()=>{
+    S.oiCountdown--;
+    document.getElementById('oi-timer').textContent='OI refresh: '+S.oiCountdown+'s';
+    if(S.oiCountdown<=0) restRefresh();
+  },1000);
+}
+
+/* ═══════════════════════════════════════
+   UI UPDATES — per symbol on WS event
+═══════════════════════════════════════ */
+function updateSymbolUI(sym){
+  const d=S.live[sym]; if(!d) return;
+  const oi=S.oi[sym];
+
+  if(sym==='SPY'||sym==='QQQ'||sym==='IWM'){
+    const key=sym.toLowerCase();
+    const c=d.dp>0.15?'green':d.dp<-0.15?'red':'flat';
+    const priceEl=document.getElementById('mp-'+key);
+    const chgEl=document.getElementById('mchg-'+key);
+    const vwapEl=document.getElementById('mvwap-'+key);
+    const subEl=document.getElementById('msub-'+key);
+    const cardEl=document.getElementById('mc-'+key);
+
+    if(priceEl){
+      priceEl.textContent='$'+d.price.toFixed(2);
+      priceEl.style.color=d.dp>0.15?'var(--G)':d.dp<-0.15?'var(--R)':'var(--A)';
+      priceEl.classList.add('flash');
+      setTimeout(()=>priceEl.classList.remove('flash'),400);
+    }
+    if(chgEl){chgEl.textContent=(d.dp>0?'+':'')+d.dp.toFixed(2)+'%';chgEl.style.color=d.dp>0.15?'var(--G)':d.dp<-0.15?'var(--R)':'var(--A)';}
+    if(vwapEl){
+      const aboveVWAP=d.vwap>0&&d.price>d.vwap;
+      vwapEl.textContent=(d.vwap?'VWAP $'+d.vwap.toFixed(2):'VWAP —');
+      vwapEl.style.color=d.vwap?(aboveVWAP?'var(--G)':'var(--R)'):'var(--m2)';
+    }
+    if(subEl&&oi) subEl.textContent='P/C '+oi.pcRatio.toFixed(2)+' · IV '+(oi.avgIV*100).toFixed(1)+'%';
+    if(cardEl) cardEl.className='macro-card '+c;
+  }
+
+  // Update sector grid cell
+  updateSectorCell(sym);
+}
+
+function updateSectorCell(sym){
+  const el=document.getElementById('sc-'+sym);
+  if(!el) return;
+  const d=S.live[sym]; if(!d) return;
+  const thresh=computeThresh();
+  const isLead=d.dp>thresh; const isWeak=d.dp<-0.3;
+  el.className='sec-card '+(isLead?'lead':isWeak?'weak':'');
+  const pctEl=el.querySelector('.sec-pct');
+  const vwapEl=el.querySelector('.sec-vwap');
+  if(pctEl){pctEl.textContent=(d.dp>0?'+':'')+d.dp.toFixed(2)+'%';pctEl.style.color=isLead?'var(--G)':isWeak?'var(--R)':'var(--A)';}
+  if(vwapEl&&d.vwap>0){
+    const av=d.price>d.vwap;
+    vwapEl.textContent=av?'↑V':'↓V';
+    vwapEl.style.color=av?'var(--G)':'var(--R)';
+  }
+}
+
+/* ═══════════════════════════════════════
+   RENDER SECTOR GRID (initial build)
+═══════════════════════════════════════ */
+function renderSectors(){
+  const thresh=computeThresh();
+  const rows=SECTORS.map(s=>{
+    const d=S.live[s.sym]; const oi=S.oi[s.sym];
+    return{...s,dp:d?.dp||0,vwap:d?.vwap||0,price:d?.price||0,
+      pc:oi?.pcRatio,iv:oi?.avgIV};
+  }).sort((a,b)=>b.dp-a.dp);
+
+  S.leaders=rows.filter(r=>r.dp>thresh);
+  document.getElementById('sec-badge').textContent=S.leaders.length+' leaders';
+  document.getElementById('sec-badge').className='badge '+(S.leaders.length>=3?'bg':S.leaders.length>=1?'ba':'br');
+
+  document.getElementById('sector-grid').innerHTML=rows.map(r=>{
+    const isLead=r.dp>thresh; const isWeak=r.dp<-0.3;
+    const c=isLead?'var(--G)':isWeak?'var(--R)':'var(--A)';
+    const avw=r.vwap>0&&r.price>r.vwap;
+    const pcC=r.pc!=null?(r.pc<0.9?'var(--G)':r.pc>1.3?'var(--R)':'var(--m2)'):'var(--m)';
+    return `<div class="sec-card ${isLead?'lead':isWeak?'weak':''}" id="sc-${r.sym}">
+      <span class="sec-sym" style="color:${c}">${r.sym}</span>
+      <span class="sec-name">${r.name}</span>
+      <span class="sec-pct" style="color:${c}">${r.dp>0?'+':''}${r.dp.toFixed(2)}%</span>
+      <span class="sec-vwap" style="color:${r.vwap>0?(avw?'var(--G)':'var(--R)'):'var(--m)'}">${r.vwap>0?(avw?'↑V':'↓V'):'—'}</span>
+    </div>`;
+  }).join('');
+}
+
+/* ═══════════════════════════════════════
+   OI WALLS
+═══════════════════════════════════════ */
+function renderOIWalls(){
+  const syms=['SPY','QQQ','IWM'];
+  const maxOI=Math.max(...syms.map(s=>Math.max(S.oi[s]?.callOI||0,S.oi[s]?.putOI||0)),1);
+  document.getElementById('wall-badge').textContent=
+    syms.filter(s=>{const o=S.oi[s];const l=S.live[s];return o&&l&&o.callWall.strike>l.price&&o.putWall.strike<l.price&&o.putWall.strike>0;}).length+'/3 aligned';
+  document.getElementById('oi-walls').innerHTML=syms.map(s=>{
+    const o=S.oi[s]; const l=S.live[s]; if(!o) return '';
+    const price=l?.price||0;
+    const cw=Math.min(100,(o.callOI/maxOI*100)).toFixed(0);
+    const pw=Math.min(100,(o.putOI/maxOI*100)).toFixed(0);
+    const ceil=o.callWall.strike>price&&o.callWall.strike>0;
+    const floor=o.putWall.strike<price&&o.putWall.strike>0&&price>0;
+    return `<div class="wall-row">
+      <span class="wall-sym">${s}</span>
+      <div class="wall-bars">
+        <div class="wall-track"><div class="wall-call" style="width:${cw}%"></div></div>
+        <div class="wall-track"><div class="wall-put" style="width:${pw}%"></div></div>
+      </div>
+      <div class="wall-info">
+        <span style="color:${ceil?'var(--G)':'var(--R)'}">${o.callWall.strike>0?'C $'+o.callWall.strike:'C —'}</span><br>
+        <span style="color:${floor?'var(--G)':'var(--R)'}">${o.putWall.strike>0?'P $'+o.putWall.strike:'P —'}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ═══════════════════════════════════════
+   IV BARS
+═══════════════════════════════════════ */
+function renderIVBars(){
+  const syms=['SPY','QQQ','IWM'];
+  const maxIV=0.50;
+  document.getElementById('iv-bars').innerHTML=syms.map(s=>{
+    const o=S.oi[s]; if(!o||!o.avgIV) return '';
+    const iv=o.avgIV; const ivPct=(iv*100).toFixed(1);
+    const w=Math.min(100,iv/maxIV*100).toFixed(0);
+    const c=iv<0.18?'var(--G)':iv<0.28?'#639922':iv<0.40?'var(--A)':'var(--R)';
+    const exp=S.ivAtOpen[s]&&iv>S.ivAtOpen[s]*1.05;
+    return `<div class="iv-row">
+      <span class="iv-lbl">${s}</span>
+      <div class="iv-track"><div class="iv-fill" style="width:${w}%;background:${c}"></div></div>
+      <span class="iv-val" style="color:${c}">${ivPct}%${exp?' ▲':''}</span>
+    </div>`;
+  }).join('');
+  const ivs=syms.map(s=>S.oi[s]?.avgIV||0).filter(Boolean);
+  const avg=ivs.length?ivs.reduce((a,b)=>a+b)/ivs.length:0;
+  if(avg>0){const b=document.getElementById('iv-badge');b.textContent=avg<0.18?'calm':avg<0.28?'normal':avg<0.40?'elevated':'fear';b.className='badge '+(avg<0.18?'bg':avg<0.28?'bx':avg<0.40?'ba':'br');}
+}
+
+/* ═══════════════════════════════════════
+   GAMEBOOK ENGINE
+═══════════════════════════════════════ */
+function computeThresh(){
+  const adv=SECTORS.filter(s=>S.live[s.sym]&&S.live[s.sym].dp>0).length;
+  return adv>=7?0.8:adv>=4?0.4:adv>=2?0.3:0.2;
+}
+
+function runGamebook(){
+  const now=new Date();
+  const hm=now.getHours()*60+now.getMinutes();
+  const spy=S.live.SPY; const qqq=S.live.QQQ; const iwm=S.live.IWM;
+  if(!spy||!qqq) return;
+
+  // ── Regime Gate ──
+  const spyG=spy.dp>0.05; const qqqG=qqq.dp>0.05; const iwmG=iwm?iwm.dp>0.05:null;
+  const spyR=spy.dp<-0.05; const qqqR=qqq.dp<-0.05;
+  const spyDir=spyG?'green':spyR?'red':'flat';
+  const qqqDir=qqqG?'green':qqqR?'red':'flat';
+  const aligned=spyDir===qqqDir&&spyDir!=='flat';
+
+  let regime,rTitle,rSub,rRule,rColor;
+  if(spyG&&qqqG&&(iwmG===null||iwmG)){
+    regime='risk-on';rTitle='RISK ON';rColor='var(--G)';
+    rSub='SPY + QQQ + IWM green'; rRule='Broad participation · full offense eligible · execute playbook';
+  } else if(spyR&&qqqR){
+    regime='defensive';rTitle='DEFENSIVE';rColor='var(--R)';
+    rSub='SPY + QQQ both red'; rRule='Institutions reducing exposure · reduce size · protect capital · no offensive plays';
+  } else {
+    regime='chop';rTitle='CHOP MODE';rColor='var(--A)';
+    rSub='SPY/QQQ mixed — no clear direction'; rRule='Mixed signals → no full-size trades · sniper entries only on strongest sector';
+  }
+  S.currentRegime=regime;
+  const rBlock=document.getElementById('regime-block');
+  rBlock.className='regime-block '+regime;
+  document.getElementById('regime-title').textContent=rTitle;
+  document.getElementById('regime-title').style.color=rColor;
+  document.getElementById('regime-sub').textContent=rSub;
+  const rRuleEl=document.getElementById('regime-rule');
+  rRuleEl.textContent=rRule;rRuleEl.style.borderColor=rColor;
+  const rBadge=document.getElementById('regime-badge');
+  rBadge.textContent=rTitle;rBadge.className='badge '+(regime==='risk-on'?'bg':regime==='defensive'?'br':'ba');
+
+  // ── 10:10 CHECK ──
+  // True VWAP from WS 'a' field
+  const qqqAboveOR=qqq.price>qqq.open;            // QQQ holds opening range high
+  const qqqAboveVWAP=qqq.vwap>0&&qqq.price>qqq.vwap; // QQQ above TRUE VWAP (from WS)
+  const r3=aligned;
+  setRule('1010-1',qqqAboveOR,qqqAboveOR?'↑ holds OR high $'+qqq.open.toFixed(2):'↓ rejects OR $'+qqq.open.toFixed(2));
+  setRule('1010-2',qqqAboveVWAP,qqq.vwap>0?( qqqAboveVWAP?'↑ above VWAP $'+qqq.vwap.toFixed(2):'↓ below VWAP $'+qqq.vwap.toFixed(2)):'VWAP loading...');
+  setRule('1010-3',r3,r3?'SPY+QQQ '+spyDir:'SPY='+spyDir+' QQQ='+qqqDir);
+  const p10=[ qqqAboveOR,qqqAboveVWAP,r3].filter(Boolean).length;
+  setBadge('t1010-badge',p10,3,'TREND CONFIRM','PARTIAL','CHOP / WAIT');
+  const s10=document.getElementById('sig-1010');
+  if(p10===3) s10.innerHTML='<span style="color:var(--G)">✓ All 3 pass — trend continuation entry eligible after 10:10 AM</span>';
+  else if(!r3) s10.innerHTML='<span style="color:var(--R)">✗ SPY ≠ QQQ — no full-size trade · wait for alignment</span>';
+  else if(!qqqAboveVWAP&&qqq.vwap>0) s10.innerHTML='<span style="color:var(--R)">✗ QQQ rejected VWAP — wait for reclaim before entering</span>';
+  else s10.innerHTML='<span style="color:var(--A)">⚡ Partial signals — monitor · wait for full confirmation</span>';
+
+  // ── 2PM CLOCK ──
+  const ivExp=['SPY','QQQ','IWM'].some(s=>S.ivAtOpen[s]&&S.oi[s]?.avgIV>S.ivAtOpen[s]*1.04);
+  const thresh=computeThresh();
+  S.leaders=SECTORS.filter(s=>S.live[s.sym]&&S.live[s.sym].dp>thresh);
+  const secOk=S.leaders.length>=1;
+  setRule('2pm-1',ivExp,ivExp?'expanding ▲':'flat / contracting');
+  setRule('2pm-2',secOk,secOk?S.leaders.slice(0,2).map(s=>s.sym).join(', ')+' leading':'no sector confirmed');
+  setRule('2pm-3',aligned,aligned?'SPY+QQQ aligned':'split → no lotto');
+  const p2pm=[ivExp,secOk,aligned].filter(Boolean).length;
+  setBadge('t2pm-badge',p2pm,3,'ENTER ELIGIBLE','PARTIAL','AVOID');
+  const s2pm=document.getElementById('sig-2pm');
+  if(hm<14*60) s2pm.innerHTML='<span style="color:var(--m2)">⏱ Before 2PM — monitoring conditions · '+Math.floor((14*60-hm))+'min until window</span>';
+  else if(p2pm===3) s2pm.innerHTML='<span style="color:var(--G)">✓ 2PM conditions met — sector-aligned entries eligible</span>';
+  else if(!secOk) s2pm.innerHTML='<span style="color:var(--R)">✗ No sector leader — avoid entries · wait for flow</span>';
+  else if(!ivExp) s2pm.innerHTML='<span style="color:var(--A)">⚡ IV not expanding — institutional flow weak</span>';
+  else s2pm.innerHTML='<span style="color:var(--A)">⚡ SPY/QQQ split — no full-size 2PM trade</span>';
+
+  // ── POWER HOUR ──
+  const spyD=S.live.SPY; const qqqD=S.live.QQQ;
+  const oiSPY=S.oi.SPY; const oiQQQ=S.oi.QQQ;
+  const bothAboveVWAP=spyD&&qqqD&&spyD.vwap>0&&qqqD.vwap>0&&spyD.price>spyD.vwap&&qqqD.price>qqqD.vwap;
+  const callAbove=oiSPY&&spyD&&oiSPY.callWall.strike>spyD.price&&oiSPY.callWall.strike>0;
+  const putBelow=oiSPY&&spyD&&oiSPY.putWall.strike<spyD.price&&oiSPY.putWall.strike>0&&spyD.price>0;
+  const qqqIV=oiQQQ?.avgIV||0; const ivOk=qqqIV>0&&qqqIV<0.40;
+  const notDef=regime!=='defensive';
+  setPH2('ph1',bothAboveVWAP,bothAboveVWAP?'↑ both above':'↓ below VWAP','SPY+QQQ vs VWAP (WS)');
+  setPH2('ph2',secOk,secOk?S.leaders[0]?.sym+' leading':'none','sector flow');
+  setPH2('ph3',callAbove,oiSPY&&callAbove?'$'+oiSPY.callWall.strike+' ceiling':'no wall above','SPY call OI');
+  setPH2('ph4',putBelow,oiSPY&&putBelow?'$'+oiSPY.putWall.strike+' support':'no wall below','SPY put OI');
+  setPH2('ph5',ivOk,qqqIV>0?(qqqIV*100).toFixed(1)+'%':'—','QQQ IV <40%');
+  setPH2('ph6',notDef,S.currentRegime?.replace('-',' ').toUpperCase()||'—','not defensive');
+  const pPH=[bothAboveVWAP,secOk,callAbove,putBelow,ivOk,notDef].filter(Boolean).length;
+  setBadge('tph-badge',pPH,6,'ALL PASS — SWING','SNIPER ONLY','OBSERVE');
+  document.getElementById('cph-status').innerHTML='<span class="badge '+(pPH===6?'bg':pPH>=4?'ba':'br')+'">'+pPH+'/6</span>';
+  const sPH=document.getElementById('sig-ph');
+  if(hm<15*60) sPH.innerHTML='<span style="color:var(--m2)">⏱ Power hour starts 3:00 PM · '+Math.max(0,Math.floor((15*60-hm)))+'min away · monitoring</span>';
+  else if(pPH===6) sPH.innerHTML='<span style="color:var(--G)">✓ All 6 pass — swing eligible · VWAP confirmed (live) · OI walls aligned</span>';
+  else if(!notDef) sPH.innerHTML='<span style="color:var(--R)">✗ Defensive regime — no power hour swings</span>';
+  else if(!bothAboveVWAP&&spyD?.vwap>0) sPH.innerHTML='<span style="color:var(--R)">✗ Below VWAP — wait for reclaim before any power hour entry</span>';
+  else sPH.innerHTML='<span style="color:var(--A)">⚡ '+pPH+'/6 — sniper size only on #1 sector leader</span>';
+
+  // ── SESSION VERDICT ──
+  renderVerdict(hm,p10,p2pm,pPH);
+}
+
+/* ═══════════════════════════════════════
+   VERDICT
+═══════════════════════════════════════ */
+function renderVerdict(hm,p10,p2pm,pPH){
+  const box=document.getElementById('verdict-box');
+  const t=document.getElementById('verdict-title');
+  const d=document.getElementById('verdict-detail');
+  let cls,title,detail;
+
+  if(S.currentRegime==='defensive'){
+    cls='no';title='STAND DOWN — Defensive regime';detail='SPY+QQQ both red. No offensive plays. Capital preservation. Wait for regime change before re-engaging.';
+  } else if(hm<9*60+30){
+    cls='obs';title='PRE-MARKET — Set your bias';detail='Review OI walls and IV environment loaded from REST. Note call ceiling and put floor for SPY/QQQ. Watch for gap direction.';
+  } else if(hm<10*60+10){
+    cls='wait';title='DISCOVERY — Do not enter';detail='9:30–10:10 AM. Let price discover direction. Watch QQQ vs opening range. Do not front-run. WebSocket streaming live.';
+  } else if(hm<11*60+30){
+    if(p10===3){cls='go';title='TREND WINDOW — Entry eligible';detail='QQQ holds opening range. Above TRUE VWAP. SPY+QQQ aligned. Execute gamebook on leading sector.';}
+    else if(p10>=2){cls='wait';title='TREND WINDOW — Partial signals';detail='Not all 3 conditions met. Wait for QQQ to hold VWAP and OR high before entering.';}
+    else{cls='no';title='TREND WINDOW — Chop';detail='QQQ rejected VWAP or SPY/QQQ split. Mark as chop day. Reduce size. Do not force entries.';}
+  } else if(hm<14*60){
+    cls='obs';title='MIDDAY DEAD ZONE';detail='11:30–2:00 PM. No new positions. Manage open trades. Watch OI levels. Auto OI refresh running.';
+  } else if(hm<15*60){
+    if(p2pm===3){cls='go';title='2PM WINDOW — Enter eligible';detail='IV expanding + sector confirmed + SPY/QQQ aligned. Institutional reposition window. Entry eligible.';}
+    else if(p2pm>=2){cls='wait';title='2PM WINDOW — Partial';detail='Some 2PM conditions. Sniper size only on single best sector. No full-size.';}
+    else{cls='no';title='2PM WINDOW — Avoid';detail='2PM conditions not met. Sector or IV unconfirmed. No entries.';}
+  } else if(hm<16*60){
+    if(pPH===6){cls='go';title='POWER HOUR — Swing eligible';detail='All 6 conditions pass. Above VWAP (live WS). Sector aligned. OI walls confirmed. IV clean. Execute.';}
+    else if(pPH>=4){cls='wait';title='POWER HOUR — Sniper only';detail=pPH+'/6. Min size. Single sector. No lotto plays.';}
+    else{cls='no';title='POWER HOUR — Observe';detail=pPH+'/6 conditions. Too many failures. Watch and protect capital.';}
+  } else {
+    cls='obs';title='MARKET CLOSED';detail='Session ended. Review OI wall levels for tomorrow. Log what worked. Prepare watchlist.';
+  }
+
+  box.className='verdict '+cls;
+  t.textContent=title;
+  t.style.color=cls==='go'?'var(--G)':cls==='wait'?'var(--A)':cls==='no'?'var(--R)':'var(--B)';
+  d.textContent=detail;
+}
+
+/* ═══════════════════════════════════════
+   UI HELPERS
+═══════════════════════════════════════ */
+function setRule(id,pass,val){
+  const icon=document.getElementById('i'+id);
+  const valEl=document.getElementById('v'+id);
+  if(icon){icon.className='rule-icon '+(pass?'pass':'fail');icon.textContent=pass?'✓':'✗';}
+  if(valEl){valEl.textContent=val;valEl.style.color=pass?'var(--G)':'var(--R)';}
+}
+function setBadge(id,passes,total,good,partial,bad){
+  const el=document.getElementById(id); if(!el) return;
+  if(passes===total){el.className='badge bg';el.textContent=good;}
+  else if(passes>=Math.floor(total*0.6)){el.className='badge ba';el.textContent=partial;}
+  else{el.className='badge br';el.textContent=bad;}
+}
+function setPH2(id,pass,val,sub){
+  const el=document.getElementById(id); if(!el) return;
+  el.className='ph-item '+(pass?'pass':'fail');
+  const v=document.getElementById(id+'v');
+  const s=document.getElementById(id+'s');
+  if(v){v.textContent=val;v.style.color=pass?'var(--G)':'var(--R)';}
+  if(s&&sub) s.textContent=sub;
+}
+
+/* ═══════════════════════════════════════
+   LOG
+═══════════════════════════════════════ */
+function addLog(msg,color){
+  const t=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  S.log.unshift({t,msg,color});
+  if(S.log.length>60) S.log.pop();
+  const el=document.getElementById('log-list'); if(!el) return;
+  el.innerHTML=S.log.map(l=>`<div class="lrow"><span class="lt">${l.t}</span><span class="ldot2" style="background:${l.color==='green'?'var(--G)':l.color==='red'?'var(--R)':'var(--A)'}"></span><span class="lmsg">${l.msg}</span></div>`).join('');
+}
+function clearLog(){S.log=[];document.getElementById('log-list').innerHTML='<div style="color:var(--m);font-family:var(--mono);font-size:10px">Cleared.</div>';}
+
+/* ═══════════════════════════════════════
+   INIT
+═══════════════════════════════════════ */
+addLog('Regime Portal Gamebook initializing','amber');
+addLog('WS_KEY: '+(WS_KEY==='YOUR_MASSIVE_KEY_HERE'?'NOT SET':'detected'),'amber');
+addLog('PROXY: '+(PROXY.includes('YOUR-WORKER')?'NOT SET':PROXY),'amber');
+
+// Step 1: REST loads OI/IV/walls/initial prices
+// Step 2: WS streams live price updates + TRUE VWAP
+restRefresh();
+connectWS();
+</script>
+</body>
+</html>
