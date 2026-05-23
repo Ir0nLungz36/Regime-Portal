@@ -1,0 +1,1608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Institutional Flow + Regime Intelligence Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c0f;
+    --bg2: #0f1218;
+    --bg3: #151a22;
+    --bg4: #1c232e;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8edf5;
+    --text2: #8b95a6;
+    --text3: #505a68;
+    --green: #00e676;
+    --green2: #00c853;
+    --red: #ff1744;
+    --red2: #d50000;
+    --amber: #ffb300;
+    --blue: #2979ff;
+    --blue2: #1565c0;
+    --cyan: #00e5ff;
+    --purple: #7c4dff;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── TOP BAR ── */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    height: 48px;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .logo {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    color: var(--cyan);
+    text-transform: uppercase;
+  }
+
+  .logo span { color: var(--text3); }
+
+  .topbar-clock {
+    font-size: 11px;
+    color: var(--text3);
+    letter-spacing: 0.05em;
+  }
+
+  .market-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--text2);
+  }
+
+  .market-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 6px var(--green);
+    animation: pulse 2s infinite;
+  }
+
+  .market-dot.closed { background: var(--red); box-shadow: 0 0 6px var(--red); animation: none; }
+
+  @keyframes pulse {
+    0%,100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .api-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .api-key-input {
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    color: var(--text2);
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 3px;
+    width: 220px;
+    outline: none;
+  }
+
+  .api-key-input:focus { border-color: var(--cyan); color: var(--text); }
+  .api-key-input::placeholder { color: var(--text3); }
+
+  .btn {
+    background: transparent;
+    border: 1px solid var(--border2);
+    color: var(--text2);
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 4px 12px;
+    border-radius: 3px;
+    cursor: pointer;
+    letter-spacing: 0.05em;
+    transition: all 0.15s;
+  }
+
+  .btn:hover { border-color: var(--cyan); color: var(--cyan); }
+  .btn.active { background: var(--cyan); color: var(--bg); border-color: var(--cyan); }
+
+  .btn-refresh {
+    background: var(--blue2);
+    border-color: var(--blue);
+    color: #fff;
+  }
+
+  .btn-refresh:hover { background: var(--blue); color: #fff; }
+
+  /* ── TABS ── */
+  .tabs {
+    display: flex;
+    gap: 0;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 0 20px;
+  }
+
+  .tab {
+    padding: 10px 20px;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text3);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+    user-select: none;
+    white-space: nowrap;
+  }
+
+  .tab:hover { color: var(--text2); }
+  .tab.active { color: var(--cyan); border-bottom-color: var(--cyan); }
+
+  .tab-number {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border-radius: 2px;
+    background: var(--bg4);
+    color: var(--text3);
+    font-size: 9px;
+    text-align: center;
+    line-height: 16px;
+    margin-right: 6px;
+  }
+
+  .tab.active .tab-number { background: var(--cyan); color: var(--bg); }
+
+  /* ── MAIN LAYOUT ── */
+  .main { padding: 16px 20px; }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── SECTION HEADERS ── */
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .section-title {
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text3);
+  }
+
+  .section-badge {
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 2px;
+    font-weight: 500;
+  }
+
+  .badge-green { background: rgba(0,230,118,0.12); color: var(--green); border: 1px solid rgba(0,230,118,0.2); }
+  .badge-red { background: rgba(255,23,68,0.12); color: var(--red); border: 1px solid rgba(255,23,68,0.2); }
+  .badge-amber { background: rgba(255,179,0,0.12); color: var(--amber); border: 1px solid rgba(255,179,0,0.2); }
+  .badge-blue { background: rgba(41,121,255,0.12); color: #5b9cff; border: 1px solid rgba(41,121,255,0.2); }
+  .badge-cyan { background: rgba(0,229,255,0.1); color: var(--cyan); border: 1px solid rgba(0,229,255,0.2); }
+  .badge-gray { background: rgba(255,255,255,0.05); color: var(--text3); border: 1px solid var(--border); }
+
+  /* ── GRID ── */
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px; }
+  .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 12px; }
+  .grid-7 { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-bottom: 12px; }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 12px 14px;
+  }
+
+  .card-label {
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 4px;
+  }
+
+  .card-value {
+    font-size: 22px;
+    font-weight: 600;
+    line-height: 1.1;
+  }
+
+  .card-sub {
+    font-size: 11px;
+    color: var(--text3);
+    margin-top: 3px;
+  }
+
+  .val-green { color: var(--green); }
+  .val-red { color: var(--red); }
+  .val-amber { color: var(--amber); }
+  .val-cyan { color: var(--cyan); }
+  .val-blue { color: #5b9cff; }
+  .val-purple { color: var(--purple); }
+  .val-white { color: var(--text); }
+
+  /* ── REGIME OUTPUT ── */
+  .regime-output {
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    padding: 20px 24px;
+    text-align: center;
+    margin-bottom: 12px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .regime-output::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+
+  .regime-output.risk-on::before { background: var(--green); }
+  .regime-output.chop::before { background: var(--amber); }
+  .regime-output.defensive::before { background: var(--red); }
+  .regime-output.expansion::before { background: var(--cyan); }
+
+  .regime-label {
+    font-size: 9px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 8px;
+  }
+
+  .regime-value {
+    font-size: 32px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+  }
+
+  .regime-sub {
+    font-size: 11px;
+    color: var(--text2);
+    margin-top: 6px;
+  }
+
+  /* ── TICKER ROW ── */
+  .ticker-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 10px 12px;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+
+  .ticker-card:hover { border-color: var(--border2); }
+  .ticker-card.selected { border-color: var(--cyan); }
+
+  .ticker-sym {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text2);
+    margin-bottom: 4px;
+  }
+
+  .ticker-price {
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  .ticker-chg {
+    font-size: 10px;
+    margin-top: 2px;
+  }
+
+  /* ── OI CHART BARS ── */
+  .oi-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+
+  .oi-label {
+    width: 56px;
+    font-size: 11px;
+    color: var(--text2);
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .oi-bar-wrap {
+    flex: 1;
+    height: 20px;
+    background: var(--bg3);
+    border-radius: 2px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .oi-bar {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.4s ease;
+    display: flex;
+    align-items: center;
+    padding-left: 6px;
+    font-size: 10px;
+    font-weight: 500;
+  }
+
+  .oi-bar.call { background: rgba(0,230,118,0.25); color: var(--green); }
+  .oi-bar.put { background: rgba(255,23,68,0.25); color: var(--red); }
+  .oi-bar.wall { background: rgba(0,229,255,0.2); color: var(--cyan); }
+  .oi-oi {
+    width: 60px;
+    font-size: 10px;
+    color: var(--text3);
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  /* ── TABLE ── */
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+
+  .data-table th {
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text3);
+    padding: 6px 10px;
+    text-align: right;
+    border-bottom: 1px solid var(--border);
+    font-weight: 400;
+  }
+
+  .data-table th:first-child { text-align: left; }
+
+  .data-table td {
+    padding: 7px 10px;
+    text-align: right;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    font-size: 12px;
+    color: var(--text);
+  }
+
+  .data-table td:first-child { text-align: left; color: var(--text2); }
+
+  .data-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .data-table tr.atm td { background: rgba(0,229,255,0.05); }
+  .data-table tr.atm td:first-child { color: var(--cyan); }
+
+  /* ── GREEKS GRID ── */
+  .greek-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .greek-item {
+    flex: 1;
+    background: var(--bg3);
+    border-radius: 3px;
+    padding: 8px 10px;
+  }
+
+  .greek-name {
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 3px;
+  }
+
+  .greek-val {
+    font-size: 15px;
+    font-weight: 500;
+  }
+
+  /* ── 10:10 OUTPUT ── */
+  .signal-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: var(--bg3);
+    border-radius: 3px;
+    margin-bottom: 6px;
+    border-left: 3px solid transparent;
+  }
+
+  .signal-row.ok { border-left-color: var(--green); }
+  .signal-row.warn { border-left-color: var(--amber); }
+  .signal-row.bad { border-left-color: var(--red); }
+  .signal-row.neutral { border-left-color: var(--text3); }
+
+  .signal-icon {
+    font-size: 14px;
+    width: 18px;
+    text-align: center;
+  }
+
+  .signal-name {
+    color: var(--text2);
+    flex: 1;
+    font-size: 12px;
+  }
+
+  .signal-value {
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  /* ── VERDICT ── */
+  .verdict-box {
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    padding: 16px 20px;
+    margin-top: 12px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .verdict-box.confirmed { border-color: rgba(0,230,118,0.3); background: rgba(0,230,118,0.05); }
+  .verdict-box.warning { border-color: rgba(255,179,0,0.3); background: rgba(255,179,0,0.05); }
+  .verdict-box.danger { border-color: rgba(255,23,68,0.3); background: rgba(255,23,68,0.05); }
+
+  .verdict-label {
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 4px;
+  }
+
+  .verdict-text {
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+  }
+
+  .verdict-detail {
+    font-size: 11px;
+    color: var(--text2);
+    margin-top: 4px;
+  }
+
+  /* ── DIVIDER ── */
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 14px 0;
+  }
+
+  /* ── LOADING / ERROR ── */
+  .loading-bar {
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 1px;
+    margin-bottom: 12px;
+  }
+
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  .error-msg {
+    background: rgba(255,23,68,0.08);
+    border: 1px solid rgba(255,23,68,0.2);
+    color: var(--red);
+    padding: 10px 14px;
+    border-radius: 3px;
+    font-size: 11px;
+    margin-bottom: 10px;
+  }
+
+  .info-msg {
+    background: rgba(0,229,255,0.06);
+    border: 1px solid rgba(0,229,255,0.15);
+    color: var(--cyan);
+    padding: 10px 14px;
+    border-radius: 3px;
+    font-size: 11px;
+    margin-bottom: 10px;
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 900px) {
+    .grid-4 { grid-template-columns: repeat(2, 1fr); }
+    .grid-7 { grid-template-columns: repeat(4, 1fr); }
+  }
+
+  /* ── SCROLLBARS ── */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  /* ── TICKER INPUT ── */
+  .ticker-search {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+    align-items: center;
+  }
+
+  .ticker-input {
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 3px;
+    width: 120px;
+    outline: none;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .ticker-input:focus { border-color: var(--cyan); }
+
+  /* ── EXPIRY SELECTOR ── */
+  .expiry-select {
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    color: var(--text2);
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 6px 10px;
+    border-radius: 3px;
+    outline: none;
+    cursor: pointer;
+  }
+
+  .expiry-select:focus { border-color: var(--cyan); }
+
+  /* ── SMALL NOTE ── */
+  .note {
+    font-size: 10px;
+    color: var(--text3);
+    margin-top: 4px;
+  }
+
+  /* scrollable table wrapper */
+  .table-scroll {
+    overflow-y: auto;
+    max-height: 360px;
+  }
+
+  .sticky-head th {
+    position: sticky;
+    top: 0;
+    background: var(--bg2);
+    z-index: 2;
+  }
+
+  /* ── CALLWALL / PUTWALL BADGES ── */
+  .wall-badge {
+    display: inline-block;
+    font-size: 9px;
+    padding: 1px 6px;
+    border-radius: 2px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    vertical-align: middle;
+    margin-left: 4px;
+  }
+
+  .wall-call { background: rgba(0,230,118,0.15); color: var(--green); }
+  .wall-put { background: rgba(255,23,68,0.15); color: var(--red); }
+  .wall-atm { background: rgba(0,229,255,0.15); color: var(--cyan); }
+
+  /* ── TWO-COL OI SECTION ── */
+  .oi-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="logo">IFR<span> // </span>PORTAL</div>
+    <div class="topbar-clock" id="clock">--:--:-- ET</div>
+    <div class="market-status">
+      <div class="market-dot" id="market-dot"></div>
+      <span id="market-status-text">--</span>
+    </div>
+  </div>
+  <div class="api-status">
+    <input class="api-key-input" id="api-key" type="password" placeholder="Polygon.io API key…" autocomplete="off" />
+    <button class="btn btn-refresh" id="refresh-btn" onclick="refreshAll()">↻ REFRESH</button>
+    <button class="btn" id="auto-btn" onclick="toggleAuto()">AUTO OFF</button>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <div class="tab active" onclick="switchTab(0)"><span class="tab-number">1</span>REGIME GATE</div>
+  <div class="tab" onclick="switchTab(1)"><span class="tab-number">2</span>CONTRACT INTEL</div>
+  <div class="tab" onclick="switchTab(2)"><span class="tab-number">3</span>OI WALL MAP</div>
+  <div class="tab" onclick="switchTab(3)"><span class="tab-number">4</span>10:10 DICTATOR</div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- ════════ TAB 1 – REGIME GATE ════════ -->
+  <div class="tab-panel active" id="panel-0">
+    <div id="regime-loading" class="loading-bar" style="display:none;"></div>
+    <div id="regime-error" class="error-msg" style="display:none;"></div>
+
+    <div class="regime-output risk-on" id="regime-output">
+      <div class="regime-label">current regime</div>
+      <div class="regime-value val-green" id="regime-value">AWAITING DATA</div>
+      <div class="regime-sub" id="regime-sub">Load API key and click REFRESH</div>
+    </div>
+
+    <div class="section-header">
+      <div class="section-title">index overview</div>
+      <div id="regime-ts" class="note">--</div>
+    </div>
+
+    <div class="grid-4" id="index-grid">
+      <!-- SPY, QQQ, IWM, VIX -->
+      <div class="card">
+        <div class="card-label">SPY</div>
+        <div class="card-value val-white" id="spy-price">---</div>
+        <div class="card-sub" id="spy-chg">--</div>
+      </div>
+      <div class="card">
+        <div class="card-label">QQQ</div>
+        <div class="card-value val-white" id="qqq-price">---</div>
+        <div class="card-sub" id="qqq-chg">--</div>
+      </div>
+      <div class="card">
+        <div class="card-label">IWM</div>
+        <div class="card-value val-white" id="iwm-price">---</div>
+        <div class="card-sub" id="iwm-chg">--</div>
+      </div>
+      <div class="card">
+        <div class="card-label">VIX (proxy)</div>
+        <div class="card-value val-white" id="vix-price">---</div>
+        <div class="card-sub" id="vix-chg">--</div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <div class="section-header">
+      <div class="section-title">mega-cap leadership</div>
+    </div>
+
+    <div class="grid-7" id="mega-grid">
+      <!-- NVDA MSFT META AAPL AMZN TSLA AMD -->
+    </div>
+
+    <hr class="divider">
+
+    <div class="section-header">
+      <div class="section-title">regime signals</div>
+    </div>
+
+    <div id="regime-signals">
+      <div class="signal-row neutral">
+        <div class="signal-name">Awaiting data…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════ TAB 2 – CONTRACT INTEL ════════ -->
+  <div class="tab-panel" id="panel-1">
+    <div class="ticker-search">
+      <input class="ticker-input" id="contract-ticker" value="SPY" maxlength="6" placeholder="TICKER" />
+      <select class="expiry-select" id="expiry-select">
+        <option value="">All expirations</option>
+      </select>
+      <button class="btn btn-refresh" onclick="loadContractIntel()">↻ LOAD CHAIN</button>
+      <span class="note" id="contract-ts">--</span>
+    </div>
+
+    <div id="contract-loading" class="loading-bar" style="display:none;"></div>
+    <div id="contract-error" class="error-msg" style="display:none;"></div>
+
+    <div class="grid-4">
+      <div class="card">
+        <div class="card-label">Underlying</div>
+        <div class="card-value val-white" id="c-underlying">---</div>
+        <div class="card-sub" id="c-underlying-chg">--</div>
+      </div>
+      <div class="card">
+        <div class="card-label">ATM Strike</div>
+        <div class="card-value val-cyan" id="c-atm">---</div>
+        <div class="card-sub" id="c-atm-sub">--</div>
+      </div>
+      <div class="card">
+        <div class="card-label">IV Avg (ATM)</div>
+        <div class="card-value val-amber" id="c-iv">---</div>
+        <div class="card-sub" id="c-iv-env">--</div>
+      </div>
+      <div class="card">
+        <div class="card-label">P/C OI Ratio</div>
+        <div class="card-value" id="c-pcr">---</div>
+        <div class="card-sub" id="c-pcr-sub">--</div>
+      </div>
+    </div>
+
+    <div class="section-header">
+      <div class="section-title">ATM greeks snapshot</div>
+    </div>
+
+    <div class="greek-row" id="greeks-row">
+      <div class="greek-item"><div class="greek-name">Delta (call)</div><div class="greek-val val-green" id="g-delta">--</div></div>
+      <div class="greek-item"><div class="greek-name">Gamma</div><div class="greek-val val-amber" id="g-gamma">--</div></div>
+      <div class="greek-item"><div class="greek-name">Theta (call)</div><div class="greek-val val-red" id="g-theta">--</div></div>
+      <div class="greek-item"><div class="greek-name">Vega</div><div class="greek-val val-blue" id="g-vega">--</div></div>
+      <div class="greek-item"><div class="greek-name">IV (call ATM)</div><div class="greek-val val-amber" id="g-iv-call">--</div></div>
+    </div>
+
+    <div class="section-header">
+      <div class="section-title">options chain</div>
+      <span class="note" id="chain-count">--</span>
+    </div>
+
+    <div class="table-scroll">
+      <table class="data-table sticky-head" id="chain-table">
+        <thead>
+          <tr>
+            <th>Strike</th>
+            <th>C Bid</th>
+            <th>C Ask</th>
+            <th>C OI</th>
+            <th>C IV</th>
+            <th>C Delta</th>
+            <th>C Gamma</th>
+            <th>P Bid</th>
+            <th>P Ask</th>
+            <th>P OI</th>
+            <th>P IV</th>
+            <th>P Delta</th>
+          </tr>
+        </thead>
+        <tbody id="chain-body">
+          <tr><td colspan="12" style="color:var(--text3); text-align:center; padding:20px;">Enter ticker and click LOAD CHAIN</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ════════ TAB 3 – OI WALL MAP ════════ -->
+  <div class="tab-panel" id="panel-2">
+    <div class="ticker-search">
+      <input class="ticker-input" id="oi-ticker" value="SPY" maxlength="6" placeholder="TICKER" />
+      <button class="btn btn-refresh" onclick="loadOIWall()">↻ LOAD OI MAP</button>
+      <span class="note" id="oi-ts">--</span>
+    </div>
+
+    <div id="oi-loading" class="loading-bar" style="display:none;"></div>
+    <div id="oi-error" class="error-msg" style="display:none;"></div>
+
+    <div class="grid-3">
+      <div class="card">
+        <div class="card-label">Call Wall <span class="wall-badge wall-call">RESISTANCE</span></div>
+        <div class="card-value val-green" id="call-wall">---</div>
+        <div class="card-sub" id="call-wall-oi">--</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Put Wall <span class="wall-badge wall-put">SUPPORT</span></div>
+        <div class="card-value val-red" id="put-wall">---</div>
+        <div class="card-sub" id="put-wall-oi">--</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Max Pain <span class="wall-badge wall-atm">DEALER</span></div>
+        <div class="card-value val-amber" id="max-pain">---</div>
+        <div class="card-sub" id="max-pain-sub">--</div>
+      </div>
+    </div>
+
+    <div class="oi-cols">
+      <div>
+        <div class="section-header">
+          <div class="section-title">call OI distribution</div>
+        </div>
+        <div id="call-oi-bars">
+          <div class="note" style="padding:10px 0;">Load a ticker above</div>
+        </div>
+      </div>
+      <div>
+        <div class="section-header">
+          <div class="section-title">put OI distribution</div>
+        </div>
+        <div id="put-oi-bars">
+          <div class="note" style="padding:10px 0;">Load a ticker above</div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <div class="section-header">
+      <div class="section-title">OI summary table (top 20 by total OI)</div>
+    </div>
+
+    <div class="table-scroll">
+      <table class="data-table sticky-head" id="oi-table">
+        <thead>
+          <tr>
+            <th>Strike</th>
+            <th>Call OI</th>
+            <th>Put OI</th>
+            <th>Net OI</th>
+            <th>C/P Ratio</th>
+            <th>Tag</th>
+          </tr>
+        </thead>
+        <tbody id="oi-body">
+          <tr><td colspan="6" style="color:var(--text3); text-align:center; padding:20px;">Enter ticker and click LOAD OI MAP</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ════════ TAB 4 – 10:10 DICTATOR ════════ -->
+  <div class="tab-panel" id="panel-3">
+    <div id="dictator-loading" class="loading-bar" style="display:none;"></div>
+    <div id="dictator-error" class="error-msg" style="display:none;"></div>
+
+    <div class="section-header">
+      <div class="section-title">9:35 – 10:10 evaluation</div>
+      <div class="note" id="dictator-ts">Click REFRESH for latest data</div>
+    </div>
+
+    <div id="dictator-signals">
+      <div class="signal-row neutral"><div class="signal-name">Awaiting data…</div></div>
+    </div>
+
+    <div class="verdict-box warning" id="verdict-box">
+      <div style="flex:1;">
+        <div class="verdict-label">10:10 verdict</div>
+        <div class="verdict-text" id="verdict-text" style="color:var(--amber);">PENDING</div>
+        <div class="verdict-detail" id="verdict-detail">Load regime data first</div>
+      </div>
+      <div style="text-align:right;">
+        <div class="card-label">Confidence</div>
+        <div style="font-size:22px; font-weight:600;" id="verdict-confidence">--</div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <div class="section-header">
+      <div class="section-title">overnight candidate filter</div>
+    </div>
+
+    <div class="info-msg" id="overnight-msg">Run regime gate first, then this filter applies your 7-criterion overnight checklist to each mega-cap.</div>
+
+    <div class="grid-7" id="overnight-grid">
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// GLOBALS
+// ═══════════════════════════════════════════════════════════════
+const API_BASE = 'https://api.polygon.io';
+let autoTimer = null;
+let autoOn = false;
+let cachedRegimeData = null;
+
+const MEGA = ['NVDA','MSFT','META','AAPL','AMZN','TSLA','AMD'];
+const INDICES = ['SPY','QQQ','IWM'];
+
+function getKey() {
+  return document.getElementById('api-key').value.trim();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CLOCK
+// ═══════════════════════════════════════════════════════════════
+function updateClock() {
+  const now = new Date();
+  const et = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  const h = String(et.getHours()).padStart(2,'0');
+  const m = String(et.getMinutes()).padStart(2,'0');
+  const s = String(et.getSeconds()).padStart(2,'0');
+  document.getElementById('clock').textContent = `${h}:${m}:${s} ET`;
+
+  const hour = et.getHours();
+  const min = et.getMinutes();
+  const day = et.getDay();
+  const isWeekday = day >= 1 && day <= 5;
+  const isOpen = isWeekday && (hour > 9 || (hour === 9 && min >= 30)) && hour < 16;
+  const isPremarket = isWeekday && hour >= 4 && (hour < 9 || (hour === 9 && min < 30));
+
+  const dot = document.getElementById('market-dot');
+  const statusTxt = document.getElementById('market-status-text');
+
+  if (isOpen) {
+    dot.className = 'market-dot';
+    statusTxt.textContent = 'MARKET OPEN';
+  } else if (isPremarket) {
+    dot.className = 'market-dot';
+    dot.style.background = '#ffb300';
+    dot.style.boxShadow = '0 0 6px #ffb300';
+    statusTxt.textContent = 'PRE-MARKET';
+  } else {
+    dot.className = 'market-dot closed';
+    statusTxt.textContent = 'MARKET CLOSED';
+  }
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ═══════════════════════════════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════════════════════════════
+function switchTab(idx) {
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', i===idx));
+  document.querySelectorAll('.tab-panel').forEach((p,i) => p.classList.toggle('active', i===idx));
+}
+
+// ═══════════════════════════════════════════════════════════════
+// AUTO REFRESH
+// ═══════════════════════════════════════════════════════════════
+function toggleAuto() {
+  autoOn = !autoOn;
+  const btn = document.getElementById('auto-btn');
+  if (autoOn) {
+    btn.textContent = 'AUTO ON';
+    btn.classList.add('active');
+    autoTimer = setInterval(refreshAll, 60000);
+  } else {
+    btn.textContent = 'AUTO OFF';
+    btn.classList.remove('active');
+    clearInterval(autoTimer);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FETCH HELPER
+// ═══════════════════════════════════════════════════════════════
+async function polyFetch(path) {
+  const key = getKey();
+  if (!key) throw new Error('No API key');
+  const url = `${API_BASE}${path}${path.includes('?') ? '&' : '?'}apiKey=${key}`;
+  const res = await fetch(url);
+  if (!res.ok) {
+    const txt = await res.text().catch(() => '');
+    throw new Error(`HTTP ${res.status}: ${txt.slice(0,120)}`);
+  }
+  return res.json();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// REFRESH ALL
+// ═══════════════════════════════════════════════════════════════
+async function refreshAll() {
+  if (!getKey()) {
+    showError('regime-error', 'Enter your Polygon.io API key first');
+    return;
+  }
+  await loadRegimeGate();
+  await loadDictator();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════════
+function fmtPct(v) { return (v >= 0 ? '+' : '') + v.toFixed(2) + '%'; }
+function fmtPrice(v) { return '$' + Number(v).toFixed(2); }
+function fmtOI(v) {
+  if (v >= 1000000) return (v/1000000).toFixed(1)+'M';
+  if (v >= 1000) return (v/1000).toFixed(1)+'K';
+  return String(v);
+}
+function ts() {
+  const now = new Date();
+  return now.toLocaleTimeString('en-US', { timeZone: 'America/New_York', hour12: false }) + ' ET';
+}
+function showError(id, msg) { const el = document.getElementById(id); el.textContent = msg; el.style.display = 'block'; }
+function hideError(id) { document.getElementById(id).style.display = 'none'; }
+function showLoading(id) { document.getElementById(id).style.display = 'block'; }
+function hideLoading(id) { document.getElementById(id).style.display = 'none'; }
+
+function chgColor(pct) {
+  if (pct > 0.5) return 'val-green';
+  if (pct < -0.5) return 'val-red';
+  return 'val-amber';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TAB 1 — REGIME GATE
+// ═══════════════════════════════════════════════════════════════
+async function loadRegimeGate() {
+  hideError('regime-error');
+  showLoading('regime-loading');
+
+  const tickers = [...INDICES, 'VIXY', ...MEGA]; // VIXY as VIX proxy (ETF)
+
+  try {
+    const data = await polyFetch(`/v2/snapshot/locale/us/markets/stocks/tickers?tickers=${tickers.join(',')}`);
+    hideLoading('regime-loading');
+
+    const snaps = {};
+    (data.tickers || []).forEach(t => { snaps[t.ticker] = t; });
+
+    cachedRegimeData = snaps;
+
+    // — INDEX CARDS —
+    const indexMap = [
+      { sym: 'SPY', priceId: 'spy-price', chgId: 'spy-chg' },
+      { sym: 'QQQ', priceId: 'qqq-price', chgId: 'qqq-chg' },
+      { sym: 'IWM', priceId: 'iwm-price', chgId: 'iwm-chg' },
+      { sym: 'VIXY', priceId: 'vix-price', chgId: 'vix-chg' },
+    ];
+
+    indexMap.forEach(({ sym, priceId, chgId }) => {
+      const s = snaps[sym];
+      if (!s) return;
+      const price = s.day?.c || s.lastTrade?.p || 0;
+      const prevClose = s.prevDay?.c || price;
+      const pct = prevClose ? ((price - prevClose)/prevClose)*100 : 0;
+      const el = document.getElementById(priceId);
+      el.textContent = fmtPrice(price);
+      el.className = 'card-value ' + chgColor(pct);
+      document.getElementById(chgId).textContent = fmtPct(pct) + ' vs prev close';
+    });
+
+    // — MEGA CAPS —
+    const megaGrid = document.getElementById('mega-grid');
+    megaGrid.innerHTML = '';
+    MEGA.forEach(sym => {
+      const s = snaps[sym];
+      const price = s?.day?.c || s?.lastTrade?.p || 0;
+      const prev = s?.prevDay?.c || price;
+      const pct = prev ? ((price-prev)/prev)*100 : 0;
+      const color = pct > 0.5 ? 'val-green' : pct < -0.5 ? 'val-red' : 'val-amber';
+      const div = document.createElement('div');
+      div.className = 'ticker-card';
+      div.innerHTML = `
+        <div class="ticker-sym">${sym}</div>
+        <div class="ticker-price ${color}">${fmtPrice(price)}</div>
+        <div class="ticker-chg ${color}">${fmtPct(pct)}</div>
+      `;
+      megaGrid.appendChild(div);
+    });
+
+    // — REGIME CALCULATION —
+    const spyPct = pctOf(snaps, 'SPY');
+    const qqqPct = pctOf(snaps, 'QQQ');
+    const iwmPct = pctOf(snaps, 'IWM');
+    const vixyPct = pctOf(snaps, 'VIXY');
+    const megaUp = MEGA.filter(s => pctOf(snaps, s) > 0.3).length;
+    const megaDn = MEGA.filter(s => pctOf(snaps, s) < -0.3).length;
+
+    let regime, regimeClass, regimeColor, signals = [];
+
+    // Signals
+    const spyBull = spyPct > 0.2;
+    const qqqBull = qqqPct > 0.2;
+    const iwmBull = iwmPct > 0.2;
+    const vixyDown = vixyPct < 0;
+    const majorityLeaders = megaUp >= 5;
+    const splitLeaders = megaUp >= 2 && megaDn >= 2;
+
+    signals.push({ name: 'SPY momentum', val: fmtPct(spyPct), ok: spyBull });
+    signals.push({ name: 'QQQ momentum', val: fmtPct(qqqPct), ok: qqqBull });
+    signals.push({ name: 'IWM participation', val: fmtPct(iwmPct), ok: iwmBull });
+    signals.push({ name: 'Volatility (VIXY) falling', val: fmtPct(vixyPct), ok: vixyDown });
+    signals.push({ name: `Mega-cap leaders (${megaUp}/7 green)`, val: megaUp + ' / 7', ok: majorityLeaders });
+
+    const bullCount = [spyBull, qqqBull, iwmBull, vixyDown, majorityLeaders].filter(Boolean).length;
+
+    if (bullCount >= 4) {
+      regime = 'RISK ON'; regimeClass = 'risk-on'; regimeColor = 'val-green';
+    } else if (splitLeaders || (spyPct > -0.1 && spyPct < 0.3)) {
+      regime = 'CHOP MODE'; regimeClass = 'chop'; regimeColor = 'val-amber';
+    } else if (bullCount <= 1 && vixyPct > 1) {
+      regime = 'DEFENSIVE'; regimeClass = 'defensive'; regimeColor = 'val-red';
+    } else {
+      regime = 'EXPANSION'; regimeClass = 'expansion'; regimeColor = 'val-cyan';
+    }
+
+    const ro = document.getElementById('regime-output');
+    ro.className = 'regime-output ' + regimeClass;
+    document.getElementById('regime-value').className = 'regime-value ' + regimeColor;
+    document.getElementById('regime-value').textContent = regime;
+    document.getElementById('regime-sub').textContent = `${megaUp}/7 mega-caps positive | VIXY ${fmtPct(vixyPct)} | SPY ${fmtPct(spyPct)}`;
+    document.getElementById('regime-ts').textContent = 'Last update: ' + ts();
+
+    // Render signals
+    const sigContainer = document.getElementById('regime-signals');
+    sigContainer.innerHTML = '';
+    signals.forEach(sig => {
+      const icon = sig.ok ? '✓' : '✗';
+      const cls = sig.ok ? 'ok' : 'bad';
+      const vcls = sig.ok ? 'val-green' : 'val-red';
+      sigContainer.innerHTML += `
+        <div class="signal-row ${cls}">
+          <div class="signal-icon ${vcls}">${icon}</div>
+          <div class="signal-name">${sig.name}</div>
+          <div class="signal-value ${vcls}">${sig.val}</div>
+        </div>
+      `;
+    });
+
+  } catch(e) {
+    hideLoading('regime-loading');
+    showError('regime-error', 'Regime data error: ' + e.message);
+  }
+}
+
+function pctOf(snaps, sym) {
+  const s = snaps[sym];
+  if (!s) return 0;
+  const price = s.day?.c || s.lastTrade?.p || 0;
+  const prev = s.prevDay?.c || price;
+  return prev ? ((price-prev)/prev)*100 : 0;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TAB 2 — CONTRACT INTEL
+// ═══════════════════════════════════════════════════════════════
+async function loadContractIntel() {
+  const ticker = document.getElementById('contract-ticker').value.trim().toUpperCase();
+  if (!ticker) return;
+  if (!getKey()) { showError('contract-error', 'Enter your API key'); return; }
+
+  hideError('contract-error');
+  showLoading('contract-loading');
+
+  try {
+    // Get underlying price first
+    const snapData = await polyFetch(`/v2/snapshot/locale/us/markets/stocks/tickers?tickers=${ticker}`);
+    const underlying = snapData.tickers?.[0];
+    const underlyingPrice = underlying?.day?.c || underlying?.lastTrade?.p || 0;
+    const prev = underlying?.prevDay?.c || underlyingPrice;
+    const uPct = prev ? ((underlyingPrice-prev)/prev)*100 : 0;
+
+    document.getElementById('c-underlying').textContent = fmtPrice(underlyingPrice);
+    document.getElementById('c-underlying-chg').textContent = fmtPct(uPct) + ' vs prev close';
+
+    // Get option chain snapshot
+    const chainData = await polyFetch(`/v3/snapshot/options/${ticker}?limit=250`);
+    const contracts = chainData.results || [];
+
+    hideLoading('contract-loading');
+    document.getElementById('contract-ts').textContent = 'Loaded: ' + ts();
+
+    if (!contracts.length) {
+      showError('contract-error', 'No options data returned. Check ticker or try a more liquid stock.');
+      return;
+    }
+
+    // Populate expiry selector
+    const expiries = [...new Set(contracts.map(c => c.details?.expiration_date).filter(Boolean))].sort();
+    const expSel = document.getElementById('expiry-select');
+    expSel.innerHTML = '<option value="">All expirations</option>';
+    expiries.forEach(e => {
+      const opt = document.createElement('option');
+      opt.value = e;
+      opt.textContent = e;
+      expSel.appendChild(opt);
+    });
+    // Select nearest expiry by default
+    if (expiries[0]) expSel.value = expiries[0];
+
+    renderChain(contracts, underlyingPrice);
+
+  } catch(e) {
+    hideLoading('contract-loading');
+    showError('contract-error', 'Contract error: ' + e.message);
+  }
+}
+
+function renderChain(contracts, underlyingPrice) {
+  const selectedExpiry = document.getElementById('expiry-select').value;
+
+  let filtered = contracts;
+  if (selectedExpiry) filtered = contracts.filter(c => c.details?.expiration_date === selectedExpiry);
+
+  const calls = {}, puts = {};
+  filtered.forEach(c => {
+    const strike = c.details?.strike_price;
+    const type = c.details?.contract_type;
+    if (!strike || !type) return;
+    if (type === 'call') calls[strike] = c;
+    if (type === 'put') puts[strike] = c;
+  });
+
+  const allStrikes = [...new Set([...Object.keys(calls), ...Object.keys(puts)])].map(Number).sort((a,b)=>a-b);
+
+  // ATM
+  const atm = allStrikes.reduce((prev, curr) => Math.abs(curr - underlyingPrice) < Math.abs(prev - underlyingPrice) ? curr : prev, allStrikes[0]);
+  document.getElementById('c-atm').textContent = '$' + atm;
+  document.getElementById('c-atm-sub').textContent = `underlying: ${fmtPrice(underlyingPrice)}`;
+
+  // IV avg around ATM (±3 strikes)
+  const atmIdx = allStrikes.indexOf(atm);
+  const nearStrikes = allStrikes.slice(Math.max(0, atmIdx-3), atmIdx+4);
+  const ivVals = nearStrikes.map(s => calls[s]?.implied_volatility || puts[s]?.implied_volatility).filter(Boolean);
+  const avgIV = ivVals.length ? ivVals.reduce((a,b)=>a+b,0)/ivVals.length : 0;
+  document.getElementById('c-iv').textContent = avgIV ? (avgIV*100).toFixed(1)+'%' : '--';
+  document.getElementById('c-iv-env').textContent = avgIV < 0.2 ? 'LOW IV ENV' : avgIV < 0.4 ? 'MID IV ENV' : 'HIGH IV ENV';
+
+  // P/C OI
+  let totalCallOI = 0, totalPutOI = 0;
+  Object.values(calls).forEach(c => { totalCallOI += c.open_interest || 0; });
+  Object.values(puts).forEach(c => { totalPutOI += c.open_interest || 0; });
+  const pcr = totalCallOI ? (totalPutOI/totalCallOI) : 0;
+  const pcrEl = document.getElementById('c-pcr');
+  pcrEl.textContent = pcr.toFixed(2);
+  pcrEl.className = 'card-value ' + (pcr > 1.2 ? 'val-red' : pcr < 0.7 ? 'val-green' : 'val-amber');
+  document.getElementById('c-pcr-sub').textContent = pcr > 1.2 ? 'BEARISH SKEW' : pcr < 0.7 ? 'BULLISH SKEW' : 'NEUTRAL';
+
+  // ATM Greeks
+  const atmCall = calls[atm];
+  const atmPut = puts[atm];
+  const greeks = atmCall?.greeks || atmPut?.greeks || {};
+  document.getElementById('g-delta').textContent = atmCall?.greeks?.delta?.toFixed(3) ?? '--';
+  document.getElementById('g-gamma').textContent = greeks.gamma?.toFixed(4) ?? '--';
+  document.getElementById('g-theta').textContent = atmCall?.greeks?.theta?.toFixed(4) ?? '--';
+  document.getElementById('g-vega').textContent = greeks.vega?.toFixed(4) ?? '--';
+  document.getElementById('g-iv-call').textContent = atmCall?.implied_volatility ? (atmCall.implied_volatility*100).toFixed(1)+'%' : '--';
+
+  document.getElementById('chain-count').textContent = `${allStrikes.length} strikes | ${filtered.length} contracts`;
+
+  // Render table (show ±15 strikes from ATM for readability)
+  const displayStrikes = allStrikes.filter(s => Math.abs(s - atm) <= 20 || Math.abs(s - atm) / atm < 0.05);
+  const body = document.getElementById('chain-body');
+  body.innerHTML = '';
+
+  displayStrikes.forEach(strike => {
+    const c = calls[strike] || {};
+    const p = puts[strike] || {};
+    const isATM = strike === atm;
+    const tr = document.createElement('tr');
+    if (isATM) tr.className = 'atm';
+    tr.innerHTML = `
+      <td>${strike}${isATM ? ' <span class="wall-badge wall-atm">ATM</span>' : ''}</td>
+      <td>${c.day?.open?.toFixed(2) ?? '--'}</td>
+      <td>${c.day?.close?.toFixed(2) ?? '--'}</td>
+      <td class="${(c.open_interest||0) > 5000 ? 'val-green' : ''}">${fmtOI(c.open_interest||0)}</td>
+      <td class="val-amber">${c.implied_volatility ? (c.implied_volatility*100).toFixed(1)+'%' : '--'}</td>
+      <td>${c.greeks?.delta?.toFixed(3) ?? '--'}</td>
+      <td>${c.greeks?.gamma?.toFixed(4) ?? '--'}</td>
+      <td>${p.day?.open?.toFixed(2) ?? '--'}</td>
+      <td>${p.day?.close?.toFixed(2) ?? '--'}</td>
+      <td class="${(p.open_interest||0) > 5000 ? 'val-red' : ''}">${fmtOI(p.open_interest||0)}</td>
+      <td class="val-amber">${p.implied_volatility ? (p.implied_volatility*100).toFixed(1)+'%' : '--'}</td>
+      <td>${p.greeks?.delta?.toFixed(3) ?? '--'}</td>
+    `;
+    body.appendChild(tr);
+  });
+}
+
+// Expiry change re-renders
+document.getElementById('expiry-select').addEventListener('change', () => {
+  // re-render if we have data
+  const body = document.getElementById('chain-body');
+  if (body.children.length && body.children[0].cells.length > 1) {
+    loadContractIntel();
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// TAB 3 — OI WALL MAP
+// ═══════════════════════════════════════════════════════════════
+async function loadOIWall() {
+  const ticker = document.getElementById('oi-ticker').value.trim().toUpperCase();
+  if (!ticker) return;
+  if (!getKey()) { showError('oi-error', 'Enter your API key'); return; }
+
+  hideError('oi-error');
+  showLoading('oi-loading');
+
+  try {
+    const snapData = await polyFetch(`/v2/snapshot/locale/us/markets/stocks/tickers?tickers=${ticker}`);
+    const underlying = snapData.tickers?.[0];
+    const underlyingPrice = underlying?.day?.c || underlying?.lastTrade?.p || 0;
+
+    const chainData = await polyFetch(`/v3/snapshot/options/${ticker}?limit=250`);
+    const contracts = chainData.results || [];
+
+    hideLoading('oi-loading');
+    document.getElementById('oi-ts').textContent = 'Loaded: ' + ts();
+
+    if (!contracts.length) {
+      showError('oi-error', 'No options data for ' + ticker);
+      return;
+    }
+
+    // Aggregate OI by strike
+    const strikeData = {};
+    // Use nearest expiry for cleaner signal
+    const expiries = [...new Set(contracts.map(c => c.details?.expiration_date).filter(Boolean))].sort();
+    const nearestExp = expiries[0];
+    const nearContracts = contracts.filter(c => c.details?.expiration_date === nearestExp);
+
+    nearContracts.forEach(c => {
+      const strike = c.details?.strike_price;
+      const type = c.details?.contract_type;
+      const oi = c.open_interest || 0;
+      if (!strike) return;
+      if (!strikeData[strike]) strikeData[strike] = { callOI: 0, putOI: 0 };
+      if (type === 'call') strikeData[strike].callOI += oi;
+      if (type === 'put') strikeData[strike].putOI += oi;
+    });
+
+    const strikes = Object.keys(strikeData).map(Number).sort((a,b)=>a-b);
+
+    // Call wall: strike with max call OI
+    let callWall = strikes[0], callWallOI = 0;
+    let putWall = strikes[0], putWallOI = 0;
+    let totalCallOI = 0, totalPutOI = 0;
+
+    strikes.forEach(s => {
+      const d = strikeData[s];
+      totalCallOI += d.callOI;
+      totalPutOI += d.putOI;
+      if (d.callOI > callWallOI) { callWallOI = d.callOI; callWall = s; }
+      if (d.putOI > putWallOI) { putWallOI = d.putOI; putWall = s; }
+    });
+
+    // Max pain: strike where total OI value is minimized
+    const maxPain = calcMaxPain(strikeData, strikes, underlyingPrice);
+
+    document.getElementById('call-wall').textContent = '$' + callWall;
+    document.getElementById('call-wall-oi').textContent = fmtOI(callWallOI) + ' OI — ' + nearestExp;
+    document.getElementById('put-wall').textContent = '$' + putWall;
+    document.getElementById('put-wall-oi').textContent = fmtOI(putWallOI) + ' OI — ' + nearestExp;
+    document.getElementById('max-pain').textContent = '$' + maxPain;
+    document.getElementById('max-pain-sub').textContent = 'underlying: ' + fmtPrice(underlyingPrice);
+
+    // Bar charts — top 12 strikes by each type
+    const topCalls = [...strikes].sort((a,b) => strikeData[b].callOI - strikeData[a].callOI).slice(0,12).sort((a,b)=>a-b);
+    const topPuts = [...strikes].sort((a,b) => strikeData[b].putOI - strikeData[a].putOI).slice(0,12).sort((a,b)=>a-b);
+
+    renderOIBars('call-oi-bars', topCalls, strikeData, 'callOI', callWallOI, 'call');
+    renderOIBars('put-oi-bars', topPuts, strikeData, 'putOI', putWallOI, 'put');
+
+    // OI summary table (top 20 by total OI)
+    const top20 = strikes.sort((a,b) => (strikeData[b].callOI + strikeData[b].putOI) - (strikeData[a].callOI + strikeData[a].putOI)).slice(0,20).sort((a,b)=>a-b);
+    const tbody = document.getElementById('oi-body');
+    tbody.innerHTML = '';
+    top20.forEach(s => {
+      const d = strikeData[s];
+      const net = d.callOI - d.putOI;
+      const ratio = d.putOI ? (d.callOI/d.putOI).toFixed(2) : '∞';
+      let tag = '';
+      if (s === callWall) tag = '<span class="wall-badge wall-call">CALL WALL</span>';
+      else if (s === putWall) tag = '<span class="wall-badge wall-put">PUT WALL</span>';
+      else if (s === maxPain) tag = '<span class="wall-badge wall-atm">MAX PAIN</span>';
+      const netCls = net > 0 ? 'val-green' : 'val-red';
+      const atm = Math.abs(s - underlyingPrice) < 2 ? 'atm' : '';
+      tbody.innerHTML += `
+        <tr class="${atm}">
+          <td>$${s}</td>
+          <td class="val-green">${fmtOI(d.callOI)}</td>
+          <td class="val-red">${fmtOI(d.putOI)}</td>
+          <td class="${netCls}">${net >= 0 ? '+' : ''}${fmtOI(net)}</td>
+          <td>${ratio}</td>
+          <td>${tag}</td>
+        </tr>
+      `;
+    });
+
+  } catch(e) {
+    hideLoading('oi-loading');
+    showError('oi-error', 'OI error: ' + e.message);
+  }
+}
+
+function renderOIBars(containerId, strikes, strikeData, field, maxVal, type) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = '';
+  strikes.forEach(s => {
+    const val = strikeData[s][field];
+    const pct = maxVal ? (val / maxVal) * 100 : 0;
+    container.innerHTML += `
+      <div class="oi-row">
+        <div class="oi-label">$${s}</div>
+        <div class="oi-bar-wrap">
+          <div class="oi-bar ${type}" style="width:${pct.toFixed(1)}%;">${pct > 20 ? fmtOI(val) : ''}</div>
+        </div>
+        <div class="oi-oi">${fmtOI(val)}</div>
+      </div>
+    `;
+  });
+}
+
+function calcMaxPain(strikeData, strikes, underlyingPrice) {
+  let minPain = Infinity, maxPainStrike = strikes[0];
+  strikes.forEach(expStrike => {
+    let totalPain = 0;
+    strikes.forEach(s => {
+      const d = strikeData[s];
+      // call holders lose if spot < strike
+      if (expStrike < s) totalPain += d.callOI * (s - expStrike) * 100;
+      // put holders lose if spot > strike
+      if (expStrike > s) totalPain += d.putOI * (expStrike - s) * 100;
+    });
+    if (totalPain < minPain) { minPain = totalPain; maxPainStrike = expStrike; }
+  });
+  return maxPainStrike;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TAB 4 — 10:10 DICTATOR
+// ═══════════════════════════════════════════════════════════════
+async function loadDictator() {
+  hideError('dictator-error');
+  showLoading('dictator-loading');
+
+  // Requires regime data
+  if (!cachedRegimeData) {
+    hideLoading('dictator-loading');
+    showError('dictator-error', 'Run REFRESH to load regime data first.');
+    return;
+  }
+
+  const snaps = cachedRegimeData;
+
+  // Evaluate 10:10 signals
+  const spyPct = pctOf(snaps, 'SPY');
+  const qqqPct = pctOf(snaps, 'QQQ');
+  const iwmPct = pctOf(snaps, 'IWM');
+  const vixyPct = pctOf(snaps, 'VIXY');
+  const megaUp = MEGA.filter(s => pctOf(snaps, s) > 0.3).length;
+  const megaDn = MEGA.filter(s => pctOf(snaps, s) < -0.3).length;
+
+  const signals = [
+    { name: 'QQQ structure', val: fmtPct(qqqPct), ok: qqqPct > 0.25, detail: 'QQQ > +0.25%' },
+    { name: 'SPY breadth', val: fmtPct(spyPct), ok: spyPct > 0.2, detail: 'SPY > +0.20%' },
+    { name: 'Small-cap participation (IWM)', val: fmtPct(iwmPct), ok: iwmPct > 0, detail: 'IWM positive' },
+    { name: 'Volatility suppressed (VIXY)', val: fmtPct(vixyPct), ok: vixyPct < 0, detail: 'VIXY declining' },
+    { name: `Leadership alignment (${megaUp}/7)`, val: `${megaUp}/7 green`, ok: megaUp >= 4, detail: '≥4/7 mega-caps up' },
+    { name: 'No leadership split', val: `${megaDn} red`, ok: megaDn < 3, detail: '<3 mega-caps red' },
+  ];
+
+  hideLoading('dictator-loading');
+  document.getElementById('dictator-ts').textContent = 'Evaluated: ' + ts();
+
+  const container = document.getElementById('dictator-signals');
+  container.innerHTML = '';
+  signals.forEach(sig => {
+    const cls = sig.ok ? 'ok' : 'bad';
+    const icon = sig.ok ? '✓' : '✗';
+    const vcls = sig.ok ? 'val-green' : 'val-red';
+    container.innerHTML += `
+      <div class="signal-row ${cls}">
+        <div class="signal-icon ${vcls}">${icon}</div>
+        <div class="signal-name">${sig.name} <span style="color:var(--text3); font-size:10px;">${sig.detail}</span></div>
+        <div class="signal-value ${vcls}">${sig.val}</div>
+      </div>
+    `;
+  });
+
+  const okCount = signals.filter(s => s.ok).length;
+  const confidence = Math.round((okCount / signals.length) * 100);
+
+  const vbox = document.getElementById('verdict-box');
+  const vtxt = document.getElementById('verdict-text');
+  const vdet = document.getElementById('verdict-detail');
+  const vconf = document.getElementById('verdict-confidence');
+
+  vconf.textContent = confidence + '%';
+
+  if (okCount >= 5) {
+    vbox.className = 'verdict-box confirmed';
+    vtxt.textContent = 'TREND CONFIRMED';
+    vtxt.style.color = 'var(--green)';
+    vdet.textContent = `${okCount}/6 signals aligned — execute with trend bias`;
+  } else if (okCount >= 3) {
+    vbox.className = 'verdict-box warning';
+    vtxt.textContent = 'CHOP WARNING';
+    vtxt.style.color = 'var(--amber)';
+    vdet.textContent = `${okCount}/6 signals — mixed conditions, reduce size`;
+  } else {
+    vbox.className = 'verdict-box danger';
+    vtxt.textContent = 'DEFENSIVE ROTATION';
+    vtxt.style.color = 'var(--red)';
+    vdet.textContent = `${okCount}/6 signals — avoid directional bias, stay flat`;
+  }
+
+  // Overnight filter
+  const ogGrid = document.getElementById('overnight-grid');
+  ogGrid.innerHTML = '';
+  const ogMsg = document.getElementById('overnight-msg');
+
+  MEGA.forEach(sym => {
+    const s = snaps[sym];
+    const price = s?.day?.c || 0;
+    const prev = s?.prevDay?.c || price;
+    const pct = prev ? ((price-prev)/prev)*100 : 0;
+    const high = s?.day?.h || price;
+    const low = s?.day?.l || price;
+    const vwapProxy = (high + low + price) / 3; // HLC3 as VWAP proxy
+    const aboveVwap = price > vwapProxy * 0.999;
+    const positiveMomentum = pct > 0.3;
+    const leaderAligned = megaUp >= 4;
+    const notExtended = pct < 3.5;
+    const score = [aboveVwap, positiveMomentum, leaderAligned, notExtended, okCount >= 4].filter(Boolean).length;
+    const elite = score >= 4;
+    const borderColor = elite ? 'var(--cyan)' : 'var(--border)';
+
+    const div = document.createElement('div');
+    div.className = 'ticker-card';
+    div.style.borderColor = elite ? 'rgba(0,229,255,0.4)' : '';
+    div.innerHTML = `
+      <div class="ticker-sym">${sym} ${elite ? '<span class="wall-badge wall-atm">A+</span>' : ''}</div>
+      <div class="ticker-price ${pct > 0.3 ? 'val-green' : pct < -0.3 ? 'val-red' : 'val-amber'}">${fmtPrice(price)}</div>
+      <div class="ticker-chg ${pct > 0.3 ? 'val-green' : pct < -0.3 ? 'val-red' : 'val-amber'}">${fmtPct(pct)}</div>
+      <div style="margin-top:4px; font-size:9px; color:var(--text3);">${score}/5 criteria</div>
+    `;
+    ogGrid.appendChild(div);
+  });
+
+  ogMsg.style.display = 'none';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ENTER KEY on ticker inputs
+// ═══════════════════════════════════════════════════════════════
+document.getElementById('contract-ticker').addEventListener('keydown', e => { if(e.key==='Enter') loadContractIntel(); });
+document.getElementById('oi-ticker').addEventListener('keydown', e => { if(e.key==='Enter') loadOIWall(); });
+document.getElementById('api-key').addEventListener('keydown', e => { if(e.key==='Enter') refreshAll(); });
+</script>
+
+</body>
+</html>
