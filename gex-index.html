@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GEX EDGE — Dealer Positioning Interpreter</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Bebas+Neue&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- NOISE TEXTURE OVERLAY -->
+  <div class="noise"></div>
+
+  <!-- ══ HEADER ══════════════════════════════════════════════ -->
+  <header class="hdr">
+    <div class="hdr-brand">
+      <span class="brand-gex">GEX</span><span class="brand-edge">EDGE</span>
+      <span class="brand-tag">Dealer Positioning Interpreter</span>
+    </div>
+
+    <div class="hdr-controls">
+      <div class="ctrl-group">
+        <span class="ctrl-label">TICKER</span>
+        <input id="tickerInput" type="text" value="SPY" maxlength="6" class="ctrl-input ticker-input" />
+      </div>
+      <div class="ctrl-group">
+        <span class="ctrl-label">API KEY</span>
+        <input id="apiKeyInput" type="password" placeholder="Polygon.io key…" class="ctrl-input key-input" />
+      </div>
+      <button id="scanBtn" class="scan-btn">
+        <span class="scan-icon">◈</span> SCAN
+      </button>
+    </div>
+
+    <div class="hdr-status">
+      <div class="status-clock" id="clock">--:--:-- ET</div>
+      <div class="status-mkt" id="mktBadge">● CLOSED</div>
+      <div class="status-ws" id="wsBadge">◎ WS</div>
+    </div>
+  </header>
+
+  <!-- ══ MASTER BANNER ══════════════════════════════════════ -->
+  <div class="master-banner">
+    <div class="mb-item">
+      <div class="mb-label">DEALER CONTROL</div>
+      <div class="mb-val" id="mbControl">--/100</div>
+    </div>
+    <div class="mb-sep">▐</div>
+    <div class="mb-item">
+      <div class="mb-label">PIN PRESSURE</div>
+      <div class="mb-val" id="mbPin">--/100</div>
+    </div>
+    <div class="mb-sep">▐</div>
+    <div class="mb-item">
+      <div class="mb-label">EXPANSION ODDS</div>
+      <div class="mb-val" id="mbExpansion">--</div>
+    </div>
+    <div class="mb-sep">▐</div>
+    <div class="mb-item">
+      <div class="mb-label">CONTROL ZONE</div>
+      <div class="mb-val accent" id="mbZone">--</div>
+    </div>
+    <div class="mb-sep">▐</div>
+    <div class="mb-item">
+      <div class="mb-label">WALL STRENGTH</div>
+      <div class="mb-val" id="mbWallStr">--</div>
+    </div>
+    <div class="mb-sep">▐</div>
+    <div class="mb-item">
+      <div class="mb-label">RANGE COMPRESS</div>
+      <div class="mb-val" id="mbRangeComp">--</div>
+    </div>
+    <div class="mb-sep">▐</div>
+    <div class="mb-item">
+      <div class="mb-label">EDGE ZONE</div>
+      <div class="mb-val highlight" id="mbEdge">--</div>
+    </div>
+  </div>
+
+  <!-- ══ MAIN GRID ══════════════════════════════════════════ -->
+  <main class="grid">
+
+    <!-- ══ P1: DEALER CONTROL METER ══════════════════════════ -->
+    <section class="panel p-control">
+      <div class="panel-head">
+        <span class="panel-num">01</span>
+        <span class="panel-title">DEALER CONTROL METER</span>
+        <span class="panel-refresh" data-panel="control">↻</span>
+      </div>
+
+      <!-- Big meter -->
+      <div class="meter-wrap">
+        <div class="meter-arc" id="meterArc">
+          <svg viewBox="0 0 200 110" class="arc-svg">
+            <defs>
+              <linearGradient id="arcGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%"   stop-color="#00d97e"/>
+                <stop offset="40%"  stop-color="#f5a623"/>
+                <stop offset="70%"  stop-color="#e8450a"/>
+                <stop offset="100%" stop-color="#c0392b"/>
+              </linearGradient>
+            </defs>
+            <!-- Track -->
+            <path d="M 10 100 A 90 90 0 0 1 190 100" fill="none" stroke="#2a2620" stroke-width="16" stroke-linecap="round"/>
+            <!-- Fill arc -->
+            <path id="arcFill" d="M 10 100 A 90 90 0 0 1 190 100" fill="none" stroke="url(#arcGrad)" stroke-width="16" stroke-linecap="round" stroke-dasharray="283" stroke-dashoffset="283"/>
+            <!-- Needle -->
+            <line id="arcNeedle" x1="100" y1="100" x2="100" y2="18" stroke="#f5c842" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="100" cy="100" r="4" fill="#f5c842"/>
+            <!-- Labels -->
+            <text x="8"   y="118" class="arc-lbl">0</text>
+            <text x="90"  y="10"  class="arc-lbl">50</text>
+            <text x="182" y="118" class="arc-lbl">100</text>
+          </svg>
+        </div>
+        <div class="meter-score" id="meterScore">--</div>
+        <div class="meter-label" id="meterLabel">LOADING…</div>
+      </div>
+
+      <!-- Control breakdown -->
+      <div class="control-breakdown">
+        <div class="cb-row"><span class="cb-key">Gamma Magnitude</span><div class="cb-bar-wrap"><div class="cb-bar" id="cbGamma"></div></div><span class="cb-val" id="cbGammaVal">--</span></div>
+        <div class="cb-row"><span class="cb-key">Wall Proximity</span><div class="cb-bar-wrap"><div class="cb-bar" id="cbWall"></div></div><span class="cb-val" id="cbWallVal">--</span></div>
+        <div class="cb-row"><span class="cb-key">OI Density</span><div class="cb-bar-wrap"><div class="cb-bar" id="cbOI"></div></div><span class="cb-val" id="cbOIVal">--</span></div>
+        <div class="cb-row"><span class="cb-key">Range Compression</span><div class="cb-bar-wrap"><div class="cb-bar" id="cbRange"></div></div><span class="cb-val" id="cbRangeVal">--</span></div>
+      </div>
+
+      <!-- Control zone box -->
+      <div class="control-zone-box">
+        <span class="cz-label">CONTROL ZONE</span>
+        <span class="cz-val" id="czVal">-- ± --</span>
+      </div>
+    </section>
+
+    <!-- ══ P2: PIN PRESSURE SCORE ═════════════════════════════ -->
+    <section class="panel p-pin">
+      <div class="panel-head">
+        <span class="panel-num">02</span>
+        <span class="panel-title">PIN PRESSURE SCORE</span>
+        <span class="panel-refresh" data-panel="pin">↻</span>
+      </div>
+
+      <div class="pin-score-display">
+        <div class="pin-number" id="pinScore">--</div>
+        <div class="pin-grade" id="pinGrade">LOADING</div>
+        <div class="pin-bar-track">
+          <div class="pin-bar-fill" id="pinBarFill"></div>
+          <div class="pin-marker low"  style="left:25%">LOW</div>
+          <div class="pin-marker mid"  style="left:50%">MOD</div>
+          <div class="pin-marker high" style="left:75%">HIGH</div>
+        </div>
+      </div>
+
+      <div class="pin-factors">
+        <div class="pf-item"><span class="pf-k">Dist to Max Pain</span><span class="pf-v" id="pfMaxPain">--</span></div>
+        <div class="pf-item"><span class="pf-k">Dist to Call Wall</span><span class="pf-v" id="pfCallWall">--</span></div>
+        <div class="pf-item"><span class="pf-k">Dist to Gamma Flip</span><span class="pf-v" id="pfGammaFlip">--</span></div>
+        <div class="pf-item"><span class="pf-k">Net Gamma Mag</span><span class="pf-v" id="pfNetGamma">--</span></div>
+        <div class="pf-item"><span class="pf-k">OI Concentration</span><span class="pf-v" id="pfOiConc">--</span></div>
+        <div class="pf-item"><span class="pf-k">ExpMove Compress</span><span class="pf-v" id="pfExpMove">--</span></div>
+      </div>
+
+      <div class="pin-verdict" id="pinVerdict">
+        Analyzing pin factors…
+      </div>
+    </section>
+
+    <!-- ══ P3: OI WALL MAP ════════════════════════════════════ -->
+    <section class="panel p-walls">
+      <div class="panel-head">
+        <span class="panel-num">03</span>
+        <span class="panel-title">OI WALL MAP + WALL STRENGTH</span>
+        <span class="panel-refresh" data-panel="walls">↻</span>
+      </div>
+
+      <div class="wall-stats">
+        <div class="ws-block call-block">
+          <div class="ws-blk-label">CALL WALL</div>
+          <div class="ws-blk-price" id="wCallPrice">--</div>
+          <div class="ws-blk-dist"  id="wCallDist">-- away</div>
+          <div class="ws-strength"  id="wCallStr">--</div>
+        </div>
+        <div class="ws-block pain-block">
+          <div class="ws-blk-label">MAX PAIN</div>
+          <div class="ws-blk-price" id="wPainPrice">--</div>
+          <div class="ws-blk-dist"  id="wPainDist">dealer equil</div>
+          <div class="ws-strength"  id="wPainStr">--</div>
+        </div>
+        <div class="ws-block put-block">
+          <div class="ws-blk-label">PUT WALL</div>
+          <div class="ws-blk-price" id="wPutPrice">--</div>
+          <div class="ws-blk-dist"  id="wPutDist">-- away</div>
+          <div class="ws-strength"  id="wPutStr">--</div>
+        </div>
+        <div class="ws-block flip-block">
+          <div class="ws-blk-label">GAMMA FLIP</div>
+          <div class="ws-blk-price" id="wFlipPrice">--</div>
+          <div class="ws-blk-dist"  id="wFlipDist">ignition lvl</div>
+          <div class="ws-strength"  id="wFlipStr">--</div>
+        </div>
+      </div>
+
+      <!-- Wall strength legend -->
+      <div class="wall-legend">
+        <span class="wl-item weak">WEAK</span>
+        <span class="wl-item mod">MODERATE</span>
+        <span class="wl-item hard">HARD CEILING</span>
+        <span class="wl-item nuclear">NUCLEAR WALL</span>
+      </div>
+
+      <!-- OI Chart -->
+      <div class="oi-chart-outer">
+        <div class="oi-chart-title">OPEN INTEREST BY STRIKE — NEAREST EXPIRY</div>
+        <div class="oi-chart-body" id="oiChartBody">
+          <div class="oi-loading">Load chain to render wall map</div>
+        </div>
+        <div class="oi-chart-legend">
+          <span><span class="dot call-dot"></span> Calls</span>
+          <span><span class="dot put-dot"></span> Puts</span>
+          <span><span class="dot price-dot"></span> Price</span>
+          <span><span class="dot pain-dot"></span> Max Pain</span>
+        </div>
+      </div>
+
+      <!-- Range compression -->
+      <div class="range-compress-box">
+        <div class="rc-title">RANGE COMPRESSION ANALYSIS</div>
+        <div class="rc-row">
+          <span class="rc-k">Wall Width (Put→Call)</span>
+          <span class="rc-v" id="rcWallWidth">--</span>
+        </div>
+        <div class="rc-row">
+          <span class="rc-k">Expected Move (1σ)</span>
+          <span class="rc-v" id="rcExpMove">--</span>
+        </div>
+        <div class="rc-row">
+          <span class="rc-k">Compression Ratio</span>
+          <span class="rc-v" id="rcRatio">--</span>
+        </div>
+        <div class="rc-verdict" id="rcVerdict">--</div>
+      </div>
+    </section>
+
+    <!-- ══ P4: EXPANSION LIKELIHOOD ═══════════════════════════ -->
+    <section class="panel p-expansion">
+      <div class="panel-head">
+        <span class="panel-num">04</span>
+        <span class="panel-title">EXPANSION LIKELIHOOD</span>
+        <span class="panel-refresh" data-panel="expansion">↻</span>
+      </div>
+
+      <!-- Expansion gauge -->
+      <div class="exp-gauge">
+        <div class="exp-bars">
+          <div class="exp-bar-row">
+            <span class="exp-bar-label">LOW</span>
+            <div class="exp-bar-track">
+              <div class="exp-bar-seg low-seg" id="expLowSeg"></div>
+            </div>
+          </div>
+          <div class="exp-bar-row">
+            <span class="exp-bar-label">MOD</span>
+            <div class="exp-bar-track">
+              <div class="exp-bar-seg mod-seg" id="expModSeg"></div>
+            </div>
+          </div>
+          <div class="exp-bar-row">
+            <span class="exp-bar-label">HIGH</span>
+            <div class="exp-bar-track">
+              <div class="exp-bar-seg high-seg" id="expHighSeg"></div>
+            </div>
+          </div>
+        </div>
+        <div class="exp-verdict-box">
+          <div class="exp-grade" id="expGrade">--</div>
+          <div class="exp-pct"   id="expPct">--%</div>
+        </div>
+      </div>
+
+      <!-- Expansion factor checklist -->
+      <div class="exp-checklist">
+        <div class="exp-section-label">SUPPRESSORS (↓ expansion)</div>
+        <div class="exp-check" id="ecPosGamma"><span class="eck"></span><span>Positive Gamma (pin/chop)</span></div>
+        <div class="exp-check" id="ecNearPain"><span class="eck"></span><span>Price near Max Pain (&lt;1%)</span></div>
+        <div class="exp-check" id="ecTightWalls"><span class="eck"></span><span>Walls compressed (&lt;2% apart)</span></div>
+        <div class="exp-check" id="ecBalFlow"><span class="eck"></span><span>Balanced P/C flow (neutral)</span></div>
+        <div class="exp-check" id="ecBigWall"><span class="eck"></span><span>Nuclear/Hard Wall nearby</span></div>
+        <div class="exp-section-label" style="margin-top:10px;">ACCELERATORS (↑ expansion)</div>
+        <div class="exp-check" id="ecNegGamma"><span class="eck"></span><span>Negative Gamma (expansion)</span></div>
+        <div class="exp-check" id="ecAwayPain"><span class="eck"></span><span>Price far from Max Pain (&gt;2%)</span></div>
+        <div class="exp-check" id="ecStrongFlow"><span class="eck"></span><span>Strong directional flow</span></div>
+        <div class="exp-check" id="ecLowPin"><span class="eck"></span><span>Low Pin Pressure (&lt;35)</span></div>
+        <div class="exp-check" id="ecRoomRun"><span class="eck"></span><span>Clear Room to Run (&gt;3%)</span></div>
+      </div>
+
+      <div class="exp-action" id="expAction">
+        Awaiting scan…
+      </div>
+    </section>
+
+    <!-- ══ P5: MID-RANGE WARNING + EDGE ZONES ═════════════════ -->
+    <section class="panel p-edge">
+      <div class="panel-head">
+        <span class="panel-num">05</span>
+        <span class="panel-title">EDGE ZONES + MID-RANGE WARNING</span>
+        <span class="panel-refresh" data-panel="edge">↻</span>
+      </div>
+
+      <!-- Current position relative to range -->
+      <div class="edge-map">
+        <div class="em-title">POSITION IN RANGE</div>
+        <div class="em-track">
+          <div class="em-zone put-zone">PUT WALL ZONE<br><span id="emPutZone">--</span></div>
+          <div class="em-zone dead-zone" id="emDeadZone">
+            <div class="em-dead-label">⚠ NO EDGE ZONE ⚠</div>
+            <div class="em-dead-sub">Dealers harvest premium here</div>
+          </div>
+          <div class="em-zone call-zone">CALL WALL ZONE<br><span id="emCallZone">--</span></div>
+          <!-- Current price marker -->
+          <div class="em-price-marker" id="emPriceMarker" style="left:50%">
+            <div class="em-price-line"></div>
+            <div class="em-price-label" id="emPriceLabel">--</div>
+          </div>
+        </div>
+        <div class="em-current-zone" id="emCurrentZone">CALCULATING POSITION…</div>
+      </div>
+
+      <!-- Edge zone table -->
+      <div class="edge-table">
+        <div class="et-title">ACTIONABLE EDGE ZONES</div>
+        <div class="et-row header">
+          <span>ZONE</span><span>PRICE RANGE</span><span>ACTION</span><span>QUALITY</span>
+        </div>
+        <div class="et-row call-edge" id="etCallEdge">
+          <span>CALL WALL REJECTION</span>
+          <span id="etCallRange">--</span>
+          <span>Fade / Put entry</span>
+          <span class="et-q" id="etCallQ">--</span>
+        </div>
+        <div class="et-row gamma-edge" id="etGammaEdge">
+          <span>GAMMA FLIP RECLAIM</span>
+          <span id="etGammaRange">--</span>
+          <span>Bull trigger above</span>
+          <span class="et-q" id="etGammaQ">--</span>
+        </div>
+        <div class="et-row mid-warn" id="etMidWarn">
+          <span>⚠ MID-RANGE</span>
+          <span id="etMidRange">--</span>
+          <span>AVOID — LOW EDGE</span>
+          <span class="et-q red">TRAP ZONE</span>
+        </div>
+        <div class="et-row put-edge" id="etPutEdge">
+          <span>PUT WALL SUPPORT</span>
+          <span id="etPutRange">--</span>
+          <span>Buy dip / Call entry</span>
+          <span class="et-q" id="etPutQ">--</span>
+        </div>
+      </div>
+
+      <!-- Retail trap warning -->
+      <div class="retail-trap" id="retailTrap">
+        <span class="rt-icon">⚠</span>
+        <div class="rt-text">
+          <div class="rt-title" id="rtTitle">CHECKING POSITION…</div>
+          <div class="rt-sub"  id="rtSub">Analyzing dealer suppression zones</div>
+        </div>
+        <div class="rt-edge" id="rtEdge">--</div>
+      </div>
+    </section>
+
+    <!-- ══ P6: FLOW INTEL ═════════════════════════════════════ -->
+    <section class="panel p-flow">
+      <div class="panel-head">
+        <span class="panel-num">06</span>
+        <span class="panel-title">FLOW INTEL + CONTRACT SCANNER</span>
+        <span class="panel-refresh" data-panel="flow">↻</span>
+      </div>
+
+      <div class="flow-top">
+        <div class="flow-stat">
+          <div class="fs-lbl">CALL VOLUME</div>
+          <div class="fs-val green" id="fCallVol">--</div>
+        </div>
+        <div class="flow-stat">
+          <div class="fs-lbl">PUT VOLUME</div>
+          <div class="fs-val red" id="fPutVol">--</div>
+        </div>
+        <div class="flow-stat">
+          <div class="fs-lbl">P/C RATIO</div>
+          <div class="fs-val" id="fPcRatio">--</div>
+        </div>
+        <div class="flow-stat">
+          <div class="fs-lbl">NET GAMMA $M</div>
+          <div class="fs-val" id="fNetGamma">--</div>
+        </div>
+        <div class="flow-stat">
+          <div class="fs-lbl">IV SKEW</div>
+          <div class="fs-val" id="fIvSkew">--</div>
+        </div>
+        <div class="flow-stat">
+          <div class="fs-lbl">FLOW SIGNAL</div>
+          <div class="fs-val highlight" id="fSignal">--</div>
+        </div>
+      </div>
+
+      <!-- Flow balance bar -->
+      <div class="flow-balance">
+        <div class="fb-calls" id="fbCalls" style="width:50%">CALLS</div>
+        <div class="fb-puts"  id="fbPuts"  style="width:50%">PUTS</div>
+      </div>
+      <div class="fb-pcts"><span id="fbCallPct">50%</span><span id="fbPutPct">50%</span></div>
+
+      <!-- Contract scanner table -->
+      <div class="scan-table-wrap">
+        <div class="scan-hdr">
+          <span>STRIKE</span><span>TYPE</span><span>EXP</span>
+          <span>OI</span><span>VOL</span><span>IV</span><span>SIGNAL</span>
+        </div>
+        <div class="scan-body" id="scanBody">
+          <div class="scan-loading">Scanning contracts…</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ P7: REGIME + STRUCTURE ═════════════════════════════ -->
+    <section class="panel p-regime">
+      <div class="panel-head">
+        <span class="panel-num">07</span>
+        <span class="panel-title">REGIME + STRUCTURE</span>
+        <span class="panel-refresh" data-panel="regime">↻</span>
+      </div>
+
+      <!-- Regime cards -->
+      <div class="regime-row">
+        <div class="reg-card" id="regSpy">
+          <div class="reg-t">SPY</div>
+          <div class="reg-p" id="regSpyP">--</div>
+          <div class="reg-c" id="regSpyC">--</div>
+        </div>
+        <div class="reg-card" id="regQqq">
+          <div class="reg-t">QQQ</div>
+          <div class="reg-p" id="regQqqP">--</div>
+          <div class="reg-c" id="regQqqC">--</div>
+        </div>
+        <div class="reg-card" id="regPrim">
+          <div class="reg-t" id="regPrimT">--</div>
+          <div class="reg-p" id="regPrimP">--</div>
+          <div class="reg-c" id="regPrimC">--</div>
+        </div>
+        <div class="reg-card" id="regVix">
+          <div class="reg-t">VIX</div>
+          <div class="reg-p" id="regVixP">--</div>
+          <div class="reg-c" id="regVixC">--</div>
+        </div>
+      </div>
+
+      <!-- Day classification -->
+      <div class="day-class-row">
+        <div class="dc-item" id="dcTrend">TREND</div>
+        <div class="dc-item" id="dcChop">CHOP</div>
+        <div class="dc-item" id="dcPin">PIN</div>
+        <div class="dc-item active" id="dcExpansion">EXPANSION</div>
+        <div class="dc-item" id="dcHedge">HEDGE</div>
+      </div>
+
+      <!-- Key levels -->
+      <div class="kl-title">KEY STRUCTURE LEVELS</div>
+      <div class="kl-stack" id="klStack">
+        <div class="kl-loading">Scan to populate levels</div>
+      </div>
+
+      <!-- Volume vs average -->
+      <div class="vol-avg-box">
+        <div class="va-label">VOLUME VS 20D AVG</div>
+        <div class="va-row">
+          <span class="va-ticker" id="vaTicker">--</span>
+          <div class="va-bar-track"><div class="va-bar-fill" id="vaBarFill"></div><div class="va-avg-line"></div></div>
+          <span class="va-pct" id="vaBarPct">--</span>
+        </div>
+        <div class="va-signal" id="vaSignal">--</div>
+      </div>
+
+      <!-- Signal log -->
+      <div class="sig-log-wrap">
+        <div class="sl-title">EVENT LOG</div>
+        <div class="sig-log" id="sigLog">
+          <div class="sl-entry init">GEX EDGE ready. Enter API key and click SCAN.</div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="foot">
+    <span>GEX EDGE v1.0 · Polygon.io Options Starter · Not financial advice · Educational use only</span>
+    <span id="lastUpdate">--</span>
+    <span id="apiCalls" style="color:#5a5040;">API: 0</span>
+    <span>↻ <span id="countdownEl">--</span>s</span>
+  </footer>
+
+  <script src="gex.js"></script>
+</body>
+</html>
